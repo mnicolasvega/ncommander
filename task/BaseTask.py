@@ -53,3 +53,7 @@ class BaseTask(TaskInterface):
     def _log(self, message: str) -> None:
         timestamp = time.time()
         self._logs[timestamp] = message
+
+    def _get_task_log_dir(self, dir_root: str, file_name: str) -> str:
+        task_name = self.name()
+        return f"{dir_root}/task/{task_name}/{file_name}"

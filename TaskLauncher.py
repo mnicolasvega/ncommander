@@ -16,6 +16,8 @@ class TaskLauncher:
 
     def run(self, params: Dict[str, Any]) -> None:
         try:
+            output_path = params['outdir']
+            self._create_dirs(output_path)
             self._log(f"executing - params: {params}")
             time_start = time.perf_counter()
             output = self._task.run(params)
@@ -27,9 +29,6 @@ class TaskLauncher:
             output['time_finish_ms'] = time.time() * 1000.0
             if (self._task.max_time_expected() is not None) and (self._time_elapsed_ms > self._task.max_time_expected()):
                 self._log(f"task took too long: {self._time_elapsed_ms} secs.")
-            output_path = params['outdir']
-            os.makedirs(output_path, exist_ok=True)
-            os.makedirs(f"{output_path}/output", exist_ok=True)
             self._write_container_logs(output_path, output)
             self._write_task_output(output_path, text_output)
             self._write_task_html_output(output_path, html_output)
@@ -44,6 +43,16 @@ class TaskLauncher:
     def logs(self) -> Dict[float, str]:
         return self._logs
 
+    def _log(self, message: str) -> None:
+        timestamp = time.time()
+        self._logs[timestamp] = message
+
+    def _create_dirs(self, output_path: str) -> None:
+        os.makedirs(output_path, exist_ok=True)
+        os.makedirs(f"{output_path}/output", exist_ok=True)
+        os.makedirs(f"{output_path}/task", exist_ok=True)
+        os.makedirs(f"{output_path}/task/{self._task.name()}", exist_ok=True)
+
     def _write_container_logs(self, output_path: str, result: Dict[str, Any]) -> None:
         json_str = json.dumps(result, ensure_ascii=False)
         with open(f"{output_path}/output.log", "a", encoding="utf-8") as f:
@@ -56,10 +65,6 @@ class TaskLauncher:
     def _write_task_html_output(self, output_path: str, html_output: str) -> None:
         with open(f"{output_path}/output/{self._task.name()}.html", "w", encoding="utf-8") as f:
             f.write(html_output)
-
-    def _log(self, message: str) -> None:
-        timestamp = time.time()
-        self._logs[timestamp] = message
 
 def _get_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()

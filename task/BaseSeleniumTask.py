@@ -64,7 +64,7 @@ class BaseSeleniumTask(BaseTask):
             driver.quit()
             log_path = ''
             if CAPTURE_HTML:
-                log_path = f"{dir_root}/{date_time} {script}.html"
+                log_path = self._get_task_log_dir(dir_root, f"{date_time} {script}.html")
                 with open(log_path, 'w', encoding='utf-8') as f:
                     f.write(html)
             return {

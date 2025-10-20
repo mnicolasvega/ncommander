@@ -32,7 +32,7 @@ def main() -> None:
         print_docker_container_logs = DEBUG,
         print_docker_container_lifecycle = DEBUG,
         run_containerless = True,
-        force_container_rebuild = True
+        force_rebuild = True
     )
     commander.run(tasks)
 
