@@ -3,6 +3,7 @@ docker/.generated/
 venv/
 
 .env
+TODO.md
 
 *.log
 *.ctxt

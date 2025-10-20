@@ -1,0 +1,5 @@
+python-dotenv
+docker
+psutil
+selenium
+webdriver-manager
