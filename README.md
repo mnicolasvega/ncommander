@@ -1,12 +1,19 @@
-# Commander
+(under development)
 
-Commander is a task scheduler framework for Python. It is built for flexibility and extensibility.
+---
+
+# ncommander
+
+ncommander is a task scheduler framework for Python. It is built for flexibility and extensibility.
 
 
 
 ## Features
 
-- Task scheduler
+- Custom python task creation
+- Docker container management
+- UI output
+- Resources management
 
 
 
