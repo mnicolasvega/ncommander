@@ -1,0 +1,9 @@
+out/
+docker/.generated/
+venv/
+
+.env
+
+*.log
+*.ctxt
+*.pyc
