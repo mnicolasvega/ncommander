@@ -30,7 +30,9 @@ def main() -> None:
     commander = TaskCommander(
         print_cycles = DEBUG,
         print_docker_container_logs = DEBUG,
-        print_docker_container_lifecycle = DEBUG
+        print_docker_container_lifecycle = DEBUG,
+        run_containerless = True,
+        force_container_rebuild = True
     )
     commander.run(tasks)
 

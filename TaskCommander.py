@@ -17,18 +17,22 @@ class TaskCommander:
     TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     PYTHON_IMAGE = "python:3.12-slim"
     VERSION = 0.1
-    FORCE_REBUILD = True
-    CONTAINERLESS = True
     
     def __init__(
         self, 
         print_cycles: bool = False,
         print_docker_container_logs: bool = False,
-        print_docker_container_lifecycle: bool = False
+        print_docker_container_lifecycle: bool = False,
+        run_containerless: bool = True,
+        force_rebuild: bool = True
     ):
-        self.print_cycles = print_cycles
-        self.print_docker_container_logs = print_docker_container_logs
-        self.print_docker_container_lifecycle = print_docker_container_lifecycle
+        self._cfg = {
+            'print_cycles': print_cycles,
+            'print_docker_container_logs': print_docker_container_logs,
+            'print_docker_container_lifecycle': print_docker_container_lifecycle,
+            'run_containerless': run_containerless,
+            'force_container_rebuild': force_rebuild
+        }
         self.container_builder = DockerBuilder()
         self.output_parser = OutputParser()
         self.last_execution = {}
@@ -42,7 +46,7 @@ class TaskCommander:
         try:
             while True:
                 count += 1
-                if self.print_cycles:
+                if self._cfg['print_cycles']:
                     self._print(f"executing cycle #{count}")
                 tasks_output = self._handle_finished_tasks()
                 for task_data in tasks:
@@ -66,9 +70,9 @@ class TaskCommander:
             self._print(f"unhandled exception: {e}")
 
     def _run_task(self, task: TaskInterface, params: Dict[str, Any]) -> Dict[str, Any]:
-        params['outdir'] = self.container_builder.get_out_dir(not self.CONTAINERLESS)
+        params['outdir'] = self.container_builder.get_out_dir(not self._cfg['run_containerless'])
         task_result = self._run_in_container(task, params) \
-            if not self.CONTAINERLESS else \
+            if not self._cfg['run_containerless'] else \
             self._run_containerless(task, params)
         return task_result
 
@@ -93,7 +97,7 @@ class TaskCommander:
                 'container': container,
                 'task_name': task.name()
             }
-            if self.print_docker_container_lifecycle:
+            if self._cfg['print_docker_container_lifecycle']:
                 self._print(f"'{task.name()}' started in container {container.short_id}")
         except DockerException as e:
             self._print(f"'{task.name()}' task docker error: {e.__str__()}")
@@ -117,7 +121,7 @@ class TaskCommander:
             path_task_dockerfile = f"{commander_dir}/docker/.generated/{task_name}"
             os.makedirs(path_task_dockerfile, exist_ok=True)
             self.container_builder.create_task_dockerfile(task, path_task_dockerfile, dockerfile_template_path)
-            if self.print_docker_container_lifecycle:
+            if self._cfg['print_docker_container_lifecycle']:
                 self._print(f"Building Docker image '{image_tag}' from {path_task_dockerfile}")
             try:
                 image, build_logs = client.images.build(
@@ -126,7 +130,7 @@ class TaskCommander:
                     rm = True,  # Remove intermediate containers
                     forcerm = True  # Always remove intermediate containers
                 )
-                if self.print_docker_container_lifecycle:
+                if self._cfg['print_docker_container_lifecycle']:
                     self._print(f"Successfully built image {image.short_id}")
             except Exception as e:
                 self._print(f"Failed to build Docker image: {e}")
@@ -175,9 +179,9 @@ class TaskCommander:
                     'data': output_dict
                 }
                 self._print(f"[{task_name}] output: {output_txt}")
-                if self.print_docker_container_logs:
+                if self._cfg['print_docker_container_logs']:
                     self._print(f"[{task_name}] logs: \"{logs}\"")
-                if self.print_docker_container_lifecycle:
+                if self._cfg['print_docker_container_lifecycle']:
                     self._print(f"[docker] Container finished: {container.short_id} ({task_name}), exit code: {exit_code}")
                 self._finish_container(task_name, container)
             except Exception as e:
