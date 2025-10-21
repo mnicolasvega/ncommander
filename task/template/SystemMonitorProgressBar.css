@@ -1,0 +1,14 @@
+div.progress-container {
+  background: var(--bg-color);
+  border: 1px solid #555;
+  height: var(--height);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+div.progress-fill {
+  background: var(--fg-color);
+  border: 0px;
+  width: var(--usage);
+  height: 100%;
+}

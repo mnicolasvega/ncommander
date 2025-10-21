@@ -1,0 +1,20 @@
+a.video-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+table.video-table {
+  width: 100%;
+  border-collapse: collapse;
+  padding: 0;
+}
+
+td.video-cell {
+  padding: 1px;
+  background-color: var(--table-bg-color);
+}
+
+b.video-title {
+  font-size: 1.1rem;
+}

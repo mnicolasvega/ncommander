@@ -1,13 +1,14 @@
-<table style="width:50%; border-collapse:collapse;">
+<link rel="stylesheet" href="../task/template/SystemMonitorProcessList.css">
+<table>
     <colgroup>
-        <col style="width:33.33%;">
-        <col style="width:33.33%; background-color:#333333;">
-        <col style="width:33.33%;">
+        <col>
+        <col>
+        <col>
     </colgroup>
-    <tr style="text-align:left; border:1px solid #404040;">
-        <th style="font-size:1.0rem;">Process ID</th>
-        <th style="font-size:1.0rem;">Process Name</th>
-        <th style="font-size:1.0rem;">CPU Usage</th>
+    <tr class="header">
+        <th>Process ID</th>
+        <th>Process Name</th>
+        <th>CPU Usage</th>
     </tr>
     {{processes}}
 </table>

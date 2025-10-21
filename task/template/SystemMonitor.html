@@ -1,43 +1,44 @@
-<table style="width:100%; border-collapse:collapse;">
+<link rel="stylesheet" href="../task/template/SystemMonitor.css">
+<table>
   <tr>
     <td>
       {{progress_bar_cpu}}
-      <div style="margin-top:6px; font-size:0.9rem;">CPU: {{cpu_percent}}</div>
+      <div class="metric-label">CPU: {{cpu_percent}}</div>
     </td>
   </tr>
   <tr>
     <td>
       {{progress_bar_ram}}
-      <div style="margin-top:6px; font-size:0.9rem;">RAM: {{ram_used}}/{{ram_total}} GB ({{ram_percent}})</div>
+      <div class="metric-label">RAM: {{ram_used}}/{{ram_total}} GB ({{ram_percent}})</div>
     </td>
   </tr>
   <tr>
     <td>
       {{progress_bar_swap}}
-      <div style="margin-top:6px; font-size:0.9rem;">Swap: {{swap_used}}/{{swap_total}} GB ({{swap_percent}})</div>
+      <div class="metric-label">Swap: {{swap_used}}/{{swap_total}} GB ({{swap_percent}})</div>
     </td>
   </tr>
   <tr>
     <td>
       {{progress_bar_disk}}
-      <div style="margin-top:6px; font-size:0.9rem;">Disk: {{disk_percent}}</div>
+      <div class="metric-label">Disk: {{disk_percent}}</div>
     </td>
   </tr>
   <tr>
     <td>
-      <hr style="border:0; border-top:2px solid #606060; margin:8px 0;"/>
+      <hr class="separator"/>
     </td>
   </tr>
   <tr>
     <td>
       {{progress_bar_cores}}
-      <div style="margin-top:6px; font-size:0.9rem;">Cores usage</div>
+      <div class="metric-label">Cores usage</div>
     </td>
   </tr>
   <tr>
     <td>
       {{processes_list}}
-      <div style="margin-top:6px; font-size:0.9rem;">Processes</div>
+      <div class="metric-label">Processes</div>
     </td>
   </tr>
 </table>

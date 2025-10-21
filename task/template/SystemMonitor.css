@@ -1,0 +1,15 @@
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+div.metric-label {
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+hr.separator {
+  border: 0;
+  border-top: 2px solid #606060;
+  margin: 8px 0;
+}

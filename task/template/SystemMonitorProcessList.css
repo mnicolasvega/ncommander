@@ -1,0 +1,26 @@
+table {
+  width: 50%;
+  border-collapse: collapse;
+}
+
+col:nth-child(1) {
+  width: 33.33%;
+}
+
+col:nth-child(2) {
+  width: 33.33%;
+  background-color: #333333;
+}
+
+col:nth-child(3) {
+  width: 33.33%;
+}
+
+tr.header {
+  text-align: left;
+  border: 1px solid #404040;
+}
+
+th {
+  font-size: 1.0rem;
+}
