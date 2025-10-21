@@ -4,14 +4,18 @@ import json
 import os
 
 class OutputParser:
-    def build_html(self, tasks_output: Dict[str, dict], task_names: List[str]) -> None:
+    def build_html(self, tasks: List[dict], tasks_output: Dict[str, dict]) -> None:
+        tasks = sorted(tasks, key=lambda x: x['order'])
         output_path = self.__get_path("output.html")
         builder = Builder()
-        tasks = {}
-        tasks.update(self._load_previous_task_executions(task_names, tasks_output))
-        tasks.update(self._load_task_executions(tasks_output))
-        for task_name, task_data in tasks.items():
-            builder.add(task_name, task_data)
+        task_names = [task_dict['task'].name() for task_dict in tasks]
+        tasks_execution_data = {}
+        tasks_execution_data.update(self._load_previous_task_executions(task_names, tasks_output))
+        tasks_execution_data.update(self._load_task_executions(tasks_output))
+        for task_data in tasks:
+            task_name = task_data['task'].name()
+            if task_name in tasks_execution_data:
+                builder.add(task_name, tasks_execution_data[task_name])
         html = builder.build()
         builder.save(output_path, html)
 

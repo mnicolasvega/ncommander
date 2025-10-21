@@ -3,7 +3,6 @@ from task.DirObserver import DirObserver
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
 from task.YouTubeScannerTask import YouTubeScannerTask
-from task.YouTubeChannelScannerTask import YouTubeChannelScannerTask
 from TaskCommander import TaskCommander
 import json
 import os
@@ -17,15 +16,26 @@ DEBUG = True
 
 def main() -> None:
     tasks = [
-        [Message(), {}],
-        [DirObserver(PATH_DIR_OBSERVER), {}],
-        [SystemMonitor(), {}],
-        #[YouTubeChannelScannerTask(), {
-        #    'channel': YOUTUBE_CHANNEL
-        #}],
-        [YouTubeScannerTask(), {
-            'channels': YOUTUBE_CHANNELS_JSON
-        }]
+        {
+            'task': YouTubeScannerTask(),
+            'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
+            'order': 1
+        },
+        {
+            'task': Message(),
+            'parameters': {},
+            'order': 2
+        },
+        {
+            'task': DirObserver(PATH_DIR_OBSERVER),
+            'parameters': {},
+            'order': 3
+        },
+        {
+            'task': SystemMonitor(),
+            'parameters': {},
+            'order': 4
+        },
     ]
     commander = TaskCommander(
         print_cycles = DEBUG,

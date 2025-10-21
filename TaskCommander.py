@@ -38,33 +38,33 @@ class TaskCommander:
         self.last_execution = {}
         self.running_containers = {}
         
-    def run(self, tasks: List[Tuple[TaskInterface, dict]]) -> None:
+    def run(self, tasks: List[dict]) -> None:
         """Main execution loop for running tasks."""
         self._initialize()
         count = 0
-        all_tasks_output = {}
-        task_names = [task.name() for task, _ in tasks]
+        tasks_output = {}
         try:
             while True:
                 count += 1
                 if self._cfg['print_cycles']:
                     self._print(f"executing cycle #{count}")
-                self.output_parser.build_html(all_tasks_output, task_names)
-                tasks_output = self._handle_finished_tasks()
-                for task_data in tasks:
-                    task, params = task_data
+                self.output_parser.build_html(tasks, tasks_output)
+                finished_tasks_output = self._handle_finished_tasks()
+                for task_dict in tasks:
+                    task = task_dict['task']
+                    params = task_dict['parameters']
                     task_name = task.name()
                     if self._should_run_task(task):
                         execution_data = self._run_task(task, params)
-                        if task_name not in tasks_output:
-                            tasks_output[task_name] = execution_data
+                        if task_name not in finished_tasks_output:
+                            finished_tasks_output[task_name] = execution_data
                         else:
-                            tasks_output[task_name].update(execution_data)
+                            finished_tasks_output[task_name].update(execution_data)
                         if 'container' in execution_data:
                             self.running_containers[task_name] = execution_data['container']
                         self.last_execution[task_name] = time.time()
-                    self.output_parser.build_html(all_tasks_output, task_names)
-                all_tasks_output.update(tasks_output)
+                    self.output_parser.build_html(tasks, tasks_output)
+                tasks_output.update(finished_tasks_output)
                 time.sleep(1)
         except KeyboardInterrupt:
             self._print("interrupted by user")
