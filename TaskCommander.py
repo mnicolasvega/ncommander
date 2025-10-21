@@ -43,11 +43,13 @@ class TaskCommander:
         self._initialize()
         count = 0
         all_tasks_output = {}
+        task_names = [task.name() for task, _ in tasks]
         try:
             while True:
                 count += 1
                 if self._cfg['print_cycles']:
                     self._print(f"executing cycle #{count}")
+                self.output_parser.build_html(all_tasks_output, task_names)
                 tasks_output = self._handle_finished_tasks()
                 for task_data in tasks:
                     task, params = task_data
@@ -61,8 +63,8 @@ class TaskCommander:
                         if 'container' in execution_data:
                             self.running_containers[task_name] = execution_data['container']
                         self.last_execution[task_name] = time.time()
+                    self.output_parser.build_html(all_tasks_output, task_names)
                 all_tasks_output.update(tasks_output)
-                self.output_parser.build_html(all_tasks_output)
                 time.sleep(1)
         except KeyboardInterrupt:
             self._print("interrupted by user")

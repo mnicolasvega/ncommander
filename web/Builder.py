@@ -9,8 +9,8 @@ class Builder:
     def __init__(self):
         self._items: Dict[str, Dict[str, Any]] = {}
 
-    def add(self, task: str, html: str, data: dict) -> None:
-        self._items[task] = { 'html': html, 'data': data }
+    def add(self, task: str, data: dict) -> None:
+        self._items[task] = data
 
     def build(self) -> str:
         html = self.__load_html_template()
@@ -27,6 +27,7 @@ class Builder:
         for task, data in items.items():
             output_data = data.get('data', {})
             output_html = data.get('html', '')
+            is_previous = data.get('is_previous', False)
             execution_time = self.__get_formatted_execution_time(output_data)
             finish_time = self.__get_formatted_finish_time(output_data)
             html_task = html_task_template[:] \

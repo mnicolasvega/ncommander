@@ -1,16 +1,17 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from web.Builder import Builder
 import json
 import os
 
 class OutputParser:
-    def build_html(self, tasks_output: Dict[str, dict]) -> None:
+    def build_html(self, tasks_output: Dict[str, dict], task_names: List[str]) -> None:
         output_path = self.__get_path("output.html")
         builder = Builder()
-        for task_name, output in tasks_output.items():
-            data = output.get('data', {})
-            html = output.get('html', "")
-            builder.add(task_name, html, data)
+        tasks = {}
+        tasks.update(self._load_previous_task_executions(task_names, tasks_output))
+        tasks.update(self._load_task_executions(tasks_output))
+        for task_name, task_data in tasks.items():
+            builder.add(task_name, task_data)
         html = builder.build()
         builder.save(output_path, html)
 
@@ -51,6 +52,32 @@ class OutputParser:
                 return f.read()
         except Exception:
             return ""
+
+    def _load_task_executions(self, tasks_output: Dict[str, dict]) -> Dict[str, dict]:
+        tasks = {}
+        for task_name, output in tasks_output.items():
+            data = output.get('data', {})
+            html = output.get('html', "")
+            tasks[task_name] = {
+                'html': html,
+                'data': data,
+                'is_previous': False
+            }
+        return tasks
+
+    def _load_previous_task_executions(self, task_names: List[str], tasks_output: Dict[str, dict]) -> Dict[str, dict]:
+        previous_tasks = {}
+        for task_name in task_names:
+            if task_name not in tasks_output:
+                html = self.get_html(task_name)
+                data = self.get_text(task_name, "output.log")
+                if html:
+                    previous_tasks[task_name] = {
+                        'html': html,
+                        'data': data,
+                        'is_previous': True
+                    }
+        return previous_tasks
 
     def __get_path(self, file_name: str) -> str:
         task_dir = os.path.dirname(os.path.abspath(__file__))
