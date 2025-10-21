@@ -1,11 +1,11 @@
-div.progress-container-core {
+div.progress-bar-core-container {
   background: var(--bg-color);
   border: 0px;
   height: var(--height);
   overflow: hidden;
 }
 
-div.progress-fill-core {
+div.progress-bar-core-fill {
   background: var(--fg-color);
   border: 0px;
   width: var(--usage);

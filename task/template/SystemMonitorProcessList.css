@@ -1,26 +1,26 @@
-table {
+table.process-list-table {
   width: 50%;
   border-collapse: collapse;
 }
 
-col:nth-child(1) {
+.process-list-table col:nth-child(1) {
   width: 33.33%;
 }
 
-col:nth-child(2) {
+.process-list-table col:nth-child(2) {
   width: 33.33%;
   background-color: #333333;
 }
 
-col:nth-child(3) {
+.process-list-table col:nth-child(3) {
   width: 33.33%;
 }
 
-tr.header {
+tr.process-list-header {
   text-align: left;
   border: 1px solid #404040;
 }
 
-th {
+.process-list-header th {
   font-size: 1.0rem;
 }

@@ -1,17 +1,17 @@
-td.group-cell {
+td.yt-scanner-group-cell {
   padding: 8px;
   vertical-align: top;
   border: 0px;
   width: 1%;
 }
 
-h2.group-title {
+h2.yt-scanner-group-title {
   margin: 0 0 6px 0;
   padding: 6px;
   border-bottom: 2px solid #ddd;
 }
 
-table.group-table {
+table.yt-scanner-group-table {
   border-collapse: collapse;
   width: 100%;
 }

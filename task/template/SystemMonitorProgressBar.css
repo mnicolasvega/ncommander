@@ -1,4 +1,4 @@
-div.progress-container {
+div.progress-bar-container {
   background: var(--bg-color);
   border: 1px solid #555;
   height: var(--height);
@@ -6,7 +6,7 @@ div.progress-container {
   overflow: hidden;
 }
 
-div.progress-fill {
+div.progress-bar-fill {
   background: var(--fg-color);
   border: 0px;
   width: var(--usage);

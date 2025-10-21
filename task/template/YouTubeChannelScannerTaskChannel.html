@@ -1,18 +1,18 @@
 <link rel="stylesheet" href="../task/template/YouTubeChannelScannerTaskChannel.css">
-<table class="channel-table">
+<table class="yt-channel-scanner-table">
   <tr>
-    <td class="channel-content">
-      <div class="channel-header">
-        <img src="{{profile_picture}}" alt="Profile Picture" class="profile-pic"/>
-        <h2 class="channel-title">
-          <a href="https://www.youtube.com/@{{channel}}" target="_blank" class="channel-link">
+    <td class="yt-channel-scanner-content">
+      <div class="yt-channel-scanner-header">
+        <img src="{{profile_picture}}" alt="Profile Picture" class="yt-channel-scanner-pic"/>
+        <h2 class="yt-channel-scanner-title">
+          <a href="https://www.youtube.com/@{{channel}}" target="_blank" class="yt-channel-scanner-link">
             {{channel_display_name}} (@{{channel}})
           </a>
         </h2>
       </div>
       {{subscriber_count}} - {{video_count}}<br/>
-      <hr class="channel-divider"/>
-      <ol class="videos-list">
+      <hr class="yt-channel-scanner-divider"/>
+      <ol class="yt-channel-scanner-list">
         {{videos_list}}
       </ol>
     </td>

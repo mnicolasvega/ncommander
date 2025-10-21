@@ -1,44 +1,44 @@
 <link rel="stylesheet" href="../task/template/SystemMonitor.css">
-<table>
-  <tr>
-    <td>
+<table class="system-monitor-table">
+  <tr class="system-monitor-row">
+    <td class="system-monitor-cell">
       {{progress_bar_cpu}}
-      <div class="metric-label">CPU: {{cpu_percent}}</div>
+      <div class="system-monitor-metric-label">CPU: {{cpu_percent}}</div>
     </td>
   </tr>
-  <tr>
-    <td>
+  <tr class="system-monitor-row">
+    <td class="system-monitor-cell">
       {{progress_bar_ram}}
-      <div class="metric-label">RAM: {{ram_used}}/{{ram_total}} GB ({{ram_percent}})</div>
+      <div class="system-monitor-metric-label">RAM: {{ram_used}}/{{ram_total}} GB ({{ram_percent}})</div>
     </td>
   </tr>
-  <tr>
-    <td>
+  <tr class="system-monitor-row">
+    <td class="system-monitor-cell">
       {{progress_bar_swap}}
-      <div class="metric-label">Swap: {{swap_used}}/{{swap_total}} GB ({{swap_percent}})</div>
+      <div class="system-monitor-metric-label">Swap: {{swap_used}}/{{swap_total}} GB ({{swap_percent}})</div>
     </td>
   </tr>
-  <tr>
-    <td>
+  <tr class="system-monitor-row">
+    <td class="system-monitor-cell">
       {{progress_bar_disk}}
-      <div class="metric-label">Disk: {{disk_percent}}</div>
+      <div class="system-monitor-metric-label">Disk: {{disk_percent}}</div>
     </td>
   </tr>
-  <tr>
-    <td>
-      <hr class="separator"/>
+  <tr class="system-monitor-row">
+    <td class="system-monitor-cell">
+      <hr class="system-monitor-separator"/>
     </td>
   </tr>
-  <tr>
-    <td>
+  <tr class="system-monitor-row">
+    <td class="system-monitor-cell">
       {{progress_bar_cores}}
-      <div class="metric-label">Cores usage</div>
+      <div class="system-monitor-metric-label">Cores usage</div>
     </td>
   </tr>
   <tr>
     <td>
       {{processes_list}}
-      <div class="metric-label">Processes</div>
+      <div class="system-monitor-metric-label">Processes</div>
     </td>
   </tr>
 </table>

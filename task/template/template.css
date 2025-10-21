@@ -1,28 +1,28 @@
-body {
+body.task-commander-body {
   font-family: Arial, sans-serif;
   margin: 20px;
   background-color: #101010;
   color: #ffffff;
 }
 
-table {
+table.task-commander-table {
   width: 100%;
   border-collapse: collapse;
   border: none;
 }
 
-td {
+.task-commander-table td {
   padding: 12px 14px;
   border: none;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   vertical-align: top;
 }
 
-a {
+.task-commander-body a {
   color: lightgreen;
 }
 
-a:visited {
+.task-commander-body a:visited {
   color: #2e8b57;
 }
 
