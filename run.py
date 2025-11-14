@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from task.DirObserver import DirObserver
+from task.FlaskTask import FlaskTask
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
 from task.YouTubeScannerTask import YouTubeScannerTask
@@ -17,25 +18,30 @@ DEBUG = True
 def main() -> None:
     tasks = [
         {
-            'task': YouTubeScannerTask(),
-            'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
+            'task': FlaskTask(),
+            'parameters': {'host': '127.0.0.1', 'port': 5000},
             'order': 1
         },
-        {
-            'task': Message(),
-            'parameters': {},
-            'order': 2
-        },
-        {
-            'task': DirObserver(PATH_DIR_OBSERVER),
-            'parameters': {},
-            'order': 3
-        },
-        {
-            'task': SystemMonitor(),
-            'parameters': {},
-            'order': 4
-        },
+        # {
+        #     'task': YouTubeScannerTask(),
+        #     'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
+        #     'order': 1
+        # },
+        # {
+        #     'task': Message(),
+        #     'parameters': {},
+        #     'order': 2
+        # },
+        # {
+        #     'task': DirObserver(PATH_DIR_OBSERVER),
+        #     'parameters': {},
+        #     'order': 3
+        # },
+        # {
+        #     'task': SystemMonitor(),
+        #     'parameters': {},
+        #     'order': 4
+        # },
     ]
     commander = TaskCommander(
         print_cycles = DEBUG,
