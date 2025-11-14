@@ -4,6 +4,7 @@ from task.DirObserver import DirObserver
 from task.FlaskTask import FlaskTask
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
+from task.UI import UI
 from task.YouTubeScannerTask import YouTubeScannerTask
 from TaskCommander import TaskCommander
 import json
@@ -19,8 +20,13 @@ DEBUG = True
 
 def main() -> None:
     tasks = [
+        #{
+        #    'task': FlaskTask(),
+        #    'parameters': {'port': 7000},
+        #    'order': 1
+        #},
         {
-            'task': FlaskTask(),
+            'task': UI(),
             'parameters': {'port': 7000},
             'order': 1
         },
