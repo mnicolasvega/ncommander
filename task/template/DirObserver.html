@@ -1,14 +1,11 @@
 <link rel="stylesheet" href="../task/template/DirObserver.css">
 📁 <i>"{{dir_path}}"</i>
 <ul class="dir-observer-list">
-  <li><strong>Directories ({{count_dirs}}):</strong>
+  <li><strong>Count:</strong> {{total_count}}</li>
+  <li><strong>Total size:</strong> {{total_size}}</li>
+  <li><strong>Content:</strong>
     <ul>
-      {{dirs_list}}
-    </ul>
-  </li>
-  <li><strong>Files ({{count_files}}):</strong>
-    <ul>
-      {{files_list}}
+      {{items_list}}
     </ul>
   </li>
 </ul>
