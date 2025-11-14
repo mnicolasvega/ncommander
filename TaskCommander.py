@@ -96,13 +96,13 @@ class TaskCommander:
         launcher = TaskLauncher(task)
         launcher.run(params)
         task_name = task.name()
-        output_txt = self.output_parser.get_text(task_name, "output.txt")
-        output_dict = self.output_parser.get_text(task_name, "output.log")
+        output_txt = self.output_parser.get_text(task_name, "output text.txt")
+        output_data = self.output_parser.get_json(task_name)
         output_html = self.output_parser.get_html(task_name)
         task_output = {
             'text': output_txt,
             'html': output_html,
-            'data': output_dict
+            'data': output_data
         }
         return task_output
     
@@ -191,13 +191,13 @@ class TaskCommander:
                     .decode(errors="replace") \
                     .strip()
                 exit_code = container.attrs['State']['ExitCode']
-                output_txt = self.output_parser.get_text(task_name, "output.txt")
-                output_dict = self.output_parser.get_text(task_name, "output.log")
+                output_txt = self.output_parser.get_text(task_name, "output text.txt")
+                output_data = self.output_parser.get_json(task_name)
                 output_html = self.output_parser.get_html(task_name)
                 containers_output[task_name] = {
                     'text': output_txt,
                     'html': output_html,
-                    'data': output_dict
+                    'data': output_data
                 }
                 self._print(f"[{task_name}] output: {output_txt}")
                 if self._cfg['print_docker_container_logs']:
@@ -245,7 +245,7 @@ class TaskCommander:
     def _save_tasks_config(self, tasks: List[dict]) -> None:
         """Save tasks configuration to a JSON file for UI server."""
         commander_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = f"{commander_dir}/tmp/output.json"
+        config_path = f"{commander_dir}/tmp/ui_config.json"
         tasks_config = [{
             'name': task_dict['task'].name(),
             'order': task_dict['order']

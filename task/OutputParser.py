@@ -57,12 +57,26 @@ class OutputParser:
         except Exception:
             return ""
 
+    def get_json(self, task_name: str) -> Dict[str, Any]:
+        """
+        Read output {task_name}.json and return its content as a dictionary.
+        This file contains the complete task output including timing data.
+        """
+        try:
+            json_path = self.__get_path(f"output/{task_name}.json")
+            if not os.path.exists(json_path):
+                return {}
+            with open(json_path, "r", encoding="utf-8", errors="replace") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
     def _load_task_executions(self, tasks_output: Dict[str, dict]) -> Dict[str, dict]:
         tasks = {}
         for task_name, output in tasks_output.items():
             data = output.get('data')
             if not data:
-                data = self.get_text(task_name, "output.log")
+                data = self.get_json(task_name)
             html = output.get('html')
             if not html:
                 html = self.get_html(task_name)
@@ -78,8 +92,8 @@ class OutputParser:
         for task_name in task_names:
             if task_name not in tasks_output:
                 html = self.get_html(task_name)
-                data = self.get_text(task_name, "output.log")
-                if html:
+                data = self.get_json(task_name)
+                if html or data:
                     previous_tasks[task_name] = {
                         'html': html,
                         'data': data,

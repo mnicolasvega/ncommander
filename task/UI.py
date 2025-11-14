@@ -33,7 +33,7 @@ class UI(FlaskTask):
         """Generate Flask server script from template with path, host and port substitution."""
         os.makedirs(os.path.dirname(script_path), exist_ok=True)
         task_template_dir = os.path.join(os.path.dirname(dir_root), "task", "template")
-        tasks_config_path = os.path.join(os.path.dirname(dir_root), "tmp", "output.json")
+        tasks_config_path = os.path.join(os.path.dirname(dir_root), "tmp", "ui_config.json")
         template_path = os.path.join(os.path.dirname(__file__), 'ui_server_template.py')
         with open(template_path, 'r', encoding='utf-8') as f:
             server_code = f.read()

@@ -32,6 +32,7 @@ class TaskLauncher:
             self._write_container_logs(output_path, output)
             self._write_task_output(output_path, text_output)
             self._write_task_html_output(output_path, html_output)
+            self._write_task_output_json(output_path, output)
         except PermissionError as e:
             self._log(f"permission error: {e}")
         except Exception as e:
@@ -56,20 +57,22 @@ class TaskLauncher:
 
     def _write_container_logs(self, output_path: str, result: Dict[str, Any]) -> None:
         json_str = json.dumps(result, ensure_ascii=False)
-        with open(f"{output_path}/output.log", "a", encoding="utf-8") as f:
+        with open(f"{output_path}/output container.log", "a", encoding="utf-8") as f:
             f.write("%s: %s\n" % (self._task.name(), json_str))
 
     def _write_task_output(self, output_path: str, text_output: str) -> None:
-        with open(f"{output_path}/output.txt", "a", encoding="utf-8") as f:
+        with open(f"{output_path}/output text.txt", "a", encoding="utf-8") as f:
             f.write("%s: %s\n" % (self._task.name(), text_output))
 
     def _write_task_html_output(self, output_path: str, html_output: str) -> None:
-        output_task_html = f"{output_path}/tasks/{self._task.name()}/out.html"
-        with open(output_task_html, "w", encoding="utf-8") as f:
+        html_path = os.path.join(output_path, "output", f"{self._task.name()}.html")
+        with open(html_path, "w", encoding="utf-8") as f:
             f.write(html_output)
-        output_result_html = f"{output_path}/output/{self._task.name()}.html"
-        with open(output_result_html, "w", encoding="utf-8") as f:
-            f.write(html_output)
+
+    def _write_task_output_json(self, output_path: str, output: Dict[str, Any]) -> None:
+        json_path = os.path.join(output_path, "output", f"{self._task.name()}.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
 
 def _get_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()

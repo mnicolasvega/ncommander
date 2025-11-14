@@ -28,7 +28,7 @@ def index():
         for task_data in tasks_config:
             task_name = task_data['name']
             html = output_parser.get_html(task_name)
-            data = output_parser.get_text(task_name, "output.log")
+            data = output_parser.get_json(task_name)
             if html or data:
                 builder.add(task_name, {
                     'html': html,
