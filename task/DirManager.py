@@ -23,7 +23,11 @@ class DirManager(BaseTask):
         return f"File created at: {data['file_path']}"
 
     def html_output(self, data: Dict[str, Any]) -> str:
-        return f"<html><body><p>File created at: {data['file_path']}</p><p>Content: {data['content']}</p></body></html>"
+        html = self._render_html_from_template('template/DirManager.html', {
+            'file_path': data['file_path'],
+            'content': data['content']
+        })
+        return html
 
     def interval(self) -> int:
         return 60
