@@ -59,4 +59,4 @@ class BaseTask(TaskInterface):
 
     def _get_task_log_dir(self, dir_root: str, file_name: str) -> str:
         task_name = self.name()
-        return f"{dir_root}/task/{task_name}/{file_name}"
+        return f"{dir_root}/tasks/{task_name}/container/{file_name}"

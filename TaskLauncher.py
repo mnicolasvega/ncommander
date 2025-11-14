@@ -52,6 +52,7 @@ class TaskLauncher:
         task_dir = f"{output_path}/tasks/{self._task.name()}"
         os.makedirs(task_dir, exist_ok=True)
         os.makedirs(f"{task_dir}/container", exist_ok=True)
+        os.makedirs(f"{output_path}/output", exist_ok=True)
 
     def _write_container_logs(self, output_path: str, result: Dict[str, Any]) -> None:
         json_str = json.dumps(result, ensure_ascii=False)
@@ -63,7 +64,11 @@ class TaskLauncher:
             f.write("%s: %s\n" % (self._task.name(), text_output))
 
     def _write_task_html_output(self, output_path: str, html_output: str) -> None:
-        with open(f"{output_path}/tasks/{self._task.name()}/out.html", "w", encoding="utf-8") as f:
+        output_task_html = f"{output_path}/tasks/{self._task.name()}/out.html"
+        with open(output_task_html, "w", encoding="utf-8") as f:
+            f.write(html_output)
+        output_result_html = f"{output_path}/output/{self._task.name()}.html"
+        with open(output_result_html, "w", encoding="utf-8") as f:
             f.write(html_output)
 
 def _get_args() -> argparse.Namespace:
