@@ -158,10 +158,17 @@ class TaskCommander:
 
     def _should_run_task(self, task: TaskInterface) -> bool:
         task_name = task.name()
+        interval = task.interval()
+        has_to_be_kept_alive = interval is None
+        if has_to_be_kept_alive:
+            if not self._cfg['run_containerless']:
+                return task_name not in self.running_containers
+            else:
+                return task_name not in self.last_execution
         if task_name not in self.last_execution:
             return True
         time_elapsed = time.time() - self.last_execution[task_name]
-        return time_elapsed >= task.interval()
+        return time_elapsed >= interval
 
     def _handle_finished_tasks(self) -> Dict[str, dict]:
         containers_output = {}

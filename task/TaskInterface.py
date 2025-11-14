@@ -10,7 +10,7 @@ class TaskInterface(ABC):
         pass
 
     @abstractmethod
-    def interval(self) -> int:
+    def interval(self) -> int | None:
         """
         Return the interval in seconds between runs.
         """

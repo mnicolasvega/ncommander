@@ -96,8 +96,11 @@ pip install --no-cache-dir --root-user-action=ignore -r /tmp/requirements.txt"""
             --outdir {output_dir} \
             --task {task.__module__} \
             --data '{json.dumps(params)}'"""
+        cmd_body = f"{cmd_pip_requirements} && {cmd_run_python}"
+        if task.interval() is None:
+            cmd_body = f"{cmd_body} && tail -f /dev/null"
         cmd = [
             "sh", "-c",
-            f"{cmd_pip_requirements} && {cmd_run_python}"
+            cmd_body
         ]
         return cmd

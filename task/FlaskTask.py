@@ -79,8 +79,8 @@ class FlaskTask(BaseTask):
             return f"{status} at {url}"
         return status or "no status"
 
-    def interval(self) -> int:
-        return 10
+    def interval(self) -> int | None:
+        return None
 
     def name(self) -> str:
         return "flask_task"
