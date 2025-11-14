@@ -52,6 +52,13 @@ class TaskInterface(ABC):
         pass
 
     @abstractmethod
+    def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
+        """
+        Return port mappings for container mode: {container_port: host_port}.
+        """
+        pass
+
+    @abstractmethod
     def requires_connection(self) -> bool:
         """
         Return true if the task requires an active internet connection.

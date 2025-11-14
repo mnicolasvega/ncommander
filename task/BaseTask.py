@@ -19,6 +19,9 @@ class BaseTask(TaskInterface):
     def max_time_expected(self) -> float | None:
         return None
 
+    def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
+        return {}
+
     def dependencies(self) -> Dict[str, Any]:
         return {}
 

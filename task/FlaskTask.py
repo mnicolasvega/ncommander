@@ -5,26 +5,27 @@ import subprocess
 import sys
 
 class FlaskTask(BaseTask):
+    DEFAULT_PORT = 5000
+    LOCALHOST = '127.0.0.1'
+
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         in_container = carry.get('in_container', False)
-        if not in_container:
-            try:
-                __import__('flask')
-            except Exception as e:
-                self._print("Flask is not installed in the current environment. Install it with 'pip install flask' or run in container mode.")
-                return {"status": "missing_dependency", "dependency": "flask", "error": str(e)}
+        dependency_error = self._check_flask_dependency(in_container)
+        if dependency_error:
+            return dependency_error
         dir_root = carry.get('outdir')
-        host = carry.get('host', '127.0.0.1')
-        port = int(carry.get('port', 5000))
+        default_host = '0.0.0.0' \
+            if in_container else \
+            self.LOCALHOST
+        host = carry.get('host', default_host)
+        port = int(carry.get('port', self.DEFAULT_PORT))
         script_path = self._get_task_log_dir(dir_root, "flask_server.py")
         log_path = self._get_task_log_dir(dir_root, "flask_server.log")
-        url = f"http://{'localhost' if host in ['127.0.0.1', '0.0.0.0'] else host}:{port}"
-
         pid_path = self._get_task_log_dir(dir_root, "flask_server.pid")
-        existing_server = self._check_existing_server(pid_path, host, port, url)
-        if existing_server:
-            return existing_server
-
+        url = f"http://{host}:{port}"
+        error_existing_server = self._check_existing_server(pid_path, host, port, url)
+        if error_existing_server:
+            return error_existing_server
         self._generate_server_script(script_path, host, port)
         return self._start_server(script_path, pid_path, log_path, host, port, url)
 
@@ -62,6 +63,10 @@ class FlaskTask(BaseTask):
     def max_time_expected(self) -> float | None:
         return 2.0
 
+    def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
+        port = int(params.get('port', self.DEFAULT_PORT))
+        return {port: port}
+
     def _start_server(self, script_path: str, pid_path: str, log_path: str, host: str, port: int, url: str) -> Dict[str, Any]:
         """Start Flask server process and return status dict."""
         with open(log_path, 'a', encoding='utf-8') as log_file:
@@ -92,6 +97,16 @@ class FlaskTask(BaseTask):
             .replace('{{port}}', str(port))
         with open(script_path, 'w', encoding='utf-8') as f:
             f.write(server_code)
+
+    def _check_flask_dependency(self, in_container: bool) -> Dict[str, Any] | None:
+        """Check if Flask is available in containerless mode. Returns error dict if missing, None otherwise."""
+        if not in_container:
+            try:
+                __import__('flask')
+            except Exception as e:
+                self._print("Flask is not installed in the current environment. Install it with 'pip install flask' or run in container mode.")
+                return {"status": "missing_dependency", "dependency": "flask", "error": str(e)}
+        return None
 
     def _check_existing_server(self, pid_path: str, host: str, port: int, url: str) -> Dict[str, Any] | None:
         """Check if Flask server is already running. Returns status dict if running, None otherwise."""

@@ -19,7 +19,7 @@ def main() -> None:
     tasks = [
         {
             'task': FlaskTask(),
-            'parameters': {'host': '127.0.0.1', 'port': 5000},
+            'parameters': {'port': 7000},
             'order': 1
         },
         # {
@@ -27,27 +27,27 @@ def main() -> None:
         #     'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
         #     'order': 1
         # },
-        # {
-        #     'task': Message(),
-        #     'parameters': {},
-        #     'order': 2
-        # },
-        # {
-        #     'task': DirObserver(PATH_DIR_OBSERVER),
-        #     'parameters': {},
-        #     'order': 3
-        # },
-        # {
-        #     'task': SystemMonitor(),
-        #     'parameters': {},
-        #     'order': 4
-        # },
+        {
+            'task': Message(),
+            'parameters': {},
+            'order': 2
+        },
+        {
+            'task': DirObserver(PATH_DIR_OBSERVER),
+            'parameters': {},
+            'order': 3
+        },
+        {
+            'task': SystemMonitor(),
+            'parameters': {},
+            'order': 4
+        },
     ]
     commander = TaskCommander(
         print_cycles = DEBUG,
         print_docker_container_logs = DEBUG,
         print_docker_container_lifecycle = DEBUG,
-        run_containerless = True,
+        run_containerless = False,
         force_rebuild = True
     )
     commander.run(tasks)

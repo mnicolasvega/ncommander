@@ -139,6 +139,7 @@ class TaskCommander:
             except Exception as e:
                 self._print(f"Failed to build Docker image: {e}")
                 raise
+        task_ports = task.ports(params)
         container = client.containers.run(
             image = image_tag,
             command = self.container_builder.get_container_cmd(task, params),
@@ -151,6 +152,7 @@ class TaskCommander:
                     "mode": "rw"
                 }
             },
+            ports = task_ports,
             environment = {"PARAMS": json.dumps(params)},
             mem_limit = self.container_builder.get_memory(1),
             nano_cpus = self.container_builder.get_cpus(1),
