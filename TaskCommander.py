@@ -72,9 +72,11 @@ class TaskCommander:
             self._print(f"unhandled exception: {e}")
 
     def _run_task(self, task: TaskInterface, params: Dict[str, Any]) -> Dict[str, Any]:
-        params['outdir'] = self.container_builder.get_out_dir(not self._cfg['run_containerless'])
+        in_container = not self._cfg['run_containerless']
+        params['outdir'] = self.container_builder.get_out_dir(in_container)
+        params['in_container'] = in_container
         task_result = self._run_in_container(task, params) \
-            if not self._cfg['run_containerless'] else \
+            if in_container else \
             self._run_containerless(task, params)
         return task_result
 

@@ -22,7 +22,7 @@ class BaseSeleniumTask(BaseTask):
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            dir_root = carry['outdir']
+            dir_root = carry.get('outdir')
             date_time = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
             url = self._get_mandatory(carry, 'url')
             script = self._get_mandatory(carry, 'script')
