@@ -52,6 +52,13 @@ class TaskInterface(ABC):
         pass
 
     @abstractmethod
+    def volumes(self, params: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+        """
+        Return volume mappings for container mode: {host_path: {"bind": container_path, "mode": "ro|rw"}}.
+        """
+        pass
+
+    @abstractmethod
     def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
         """
         Return port mappings for container mode: {container_port: host_port}.

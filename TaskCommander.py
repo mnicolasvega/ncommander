@@ -160,12 +160,7 @@ class TaskCommander:
             detach = DONT_BLOCK_CONSOLE,
             remove = KILL_CONTAINER_AFTER_FINISH,
             working_dir = f"/app/tmp/tasks/{task_name}/container",
-            volumes = {
-                commander_dir: {
-                    "bind": "/app",
-                    "mode": "rw"
-                }
-            },
+            volumes = self.container_builder.get_volumes(commander_dir, task, params),
             ports = task_ports,
             environment = {"PARAMS": json.dumps(params)},
             mem_limit = self.container_builder.get_memory(1),

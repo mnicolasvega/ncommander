@@ -7,25 +7,26 @@ Counts files in the specified directories.
 """
 class DirObserver(BaseTask):
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
-        paths = carry.get('paths', ['/'])
-        results = []
-        for dir_path in paths:
+        input_paths = carry.get('paths', ['/'])
+        paths = []
+        for original_path in input_paths:
+            dir_path = self._get_volume(original_path, carry)
             try:
                 if os.path.exists(dir_path) and os.path.isdir(dir_path):
                     count_files, count_dirs, file_names, dir_names = self._count_files_and_dirs(dir_path)
-                    self._print(f"dir '{dir_path}' has {count_files} files and {count_dirs} directories.")
-                    results.append({
-                        "dir_path": dir_path,
+                    self._print(f"dir '{original_path}' has {count_files} files and {count_dirs} directories.")
+                    paths.append({
+                        "dir_path": original_path,
                         "count_files": count_files,
                         "count_dirs": count_dirs,
                         "file_names": file_names,
                         "dir_names": dir_names
                     })
                 else:
-                    self._print(f"dir '{dir_path}' does not exist, or is not a directory.")
+                    self._print(f"dir '{original_path}' does not exist, or is not a directory.")
             except Exception as e:
-                self._print(f"error while counting files in '{dir_path}': {e}")
-        return {"paths": results}
+                self._print(f"error while counting files in '{original_path}': {e}")
+        return {"paths": paths}
 
     def text_output(self, data: Dict[str, Any]) -> str:
         paths = data.get('paths', [])
@@ -67,6 +68,19 @@ class DirObserver(BaseTask):
 
     def name(self) -> str:
         return "dir_observer"
+
+    def volumes(self, params: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+        paths = params.get('paths', [])
+        volumes = {}
+        for path in paths:
+            if not path.startswith('/app/'):
+                safe_path = path.replace('/', '_').strip('_')
+                container_path = f"/mnt/observer/{safe_path}"
+                volumes[path] = {
+                    "bind": container_path,
+                    "mode": "ro"
+                }
+        return volumes
 
     def _count_files_and_dirs(self, dir_path: str) -> Tuple[int, int, List[str], List[str]]:
         files = [f for f in os.listdir(dir_path) if os.path.isfile(f"{dir_path}/{f}")]

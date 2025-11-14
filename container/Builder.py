@@ -104,3 +104,13 @@ pip install --no-cache-dir --root-user-action=ignore -r /tmp/requirements.txt"""
             cmd_body
         ]
         return cmd
+
+    def get_volumes(self, commander_dir: str, task: TaskInterface, params: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+        default_volumes = {
+            commander_dir: {
+                "bind": "/app",
+                "mode": "rw"
+            }
+        }
+        task_volumes = task.volumes(params)
+        return {**default_volumes, **task_volumes}

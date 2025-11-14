@@ -19,10 +19,13 @@ class BaseTask(TaskInterface):
     def max_time_expected(self) -> float | None:
         return None
 
-    def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
+    def dependencies(self) -> Dict[str, Any]:
         return {}
 
-    def dependencies(self) -> Dict[str, Any]:
+    def volumes(self, params: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+        return {}
+
+    def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
         return {}
 
     def text_output(self, data: Dict[str, Any]) -> str:
@@ -60,3 +63,16 @@ class BaseTask(TaskInterface):
     def _get_task_log_dir(self, dir_root: str, file_name: str) -> str:
         task_name = self.name()
         return f"{dir_root}/tasks/{task_name}/container/{file_name}"
+
+    def _get_volume(self, dir_path: str, params: Dict[str, Any]) -> str:
+        """
+        Convert host path to container path based on volume mappings.
+        If the path is already a container path (starts with /app/), return it as-is.
+        Otherwise, look up the path in the volume mappings to get the bind path.
+        """
+        if dir_path.startswith('/app/'):
+            return dir_path
+        volume_mappings = self.volumes(params)
+        if dir_path in volume_mappings:
+            return volume_mappings[dir_path]['bind']
+        return dir_path

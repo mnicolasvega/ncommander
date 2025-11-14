@@ -14,6 +14,7 @@ PATH_DIR_OBSERVER = os.getenv("PATH_DIR_OBSERVER")
 YOUTUBE_CHANNEL = os.getenv("YOUTUBE_CHANNEL")
 YOUTUBE_CHANNELS = os.getenv("YOUTUBE_CHANNELS").split(",")
 YOUTUBE_CHANNELS_JSON = json.loads(os.getenv("YOUTUBE_CHANNELS_JSON"))
+ROOT = '/app/tmp'
 DEBUG = True
 
 def main() -> None:
@@ -34,8 +35,13 @@ def main() -> None:
             'order': 2
         },
         {
-            'task': DirObserver(PATH_DIR_OBSERVER),
-            'parameters': {},
+            'task': DirObserver(),
+            'parameters': {
+                'paths': [
+                    f"{ROOT}/output",
+                    PATH_DIR_OBSERVER,
+                ],
+            },
             'order': 3
         },
         {
