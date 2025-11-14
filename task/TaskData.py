@@ -6,23 +6,21 @@ import os
 
 class TaskData(BaseTask):
     """Task that reads and displays JSON task output files from the output/ directory."""
-    
+
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         """Read all .json files from output/ directory and return their content."""
-        outdir = carry.get('outdir', '/app/tmp')
-        output_dir = os.path.join(outdir, 'output')
+        task_dir = os.path.dirname(os.path.abspath(__file__))
+        commander_dir = os.path.dirname(task_dir)
+        output_dir = os.path.join(commander_dir, 'tmp', 'output')
         task_data_list = []
         if not os.path.exists(output_dir):
             return {"tasks": task_data_list}
         try:
-            files = os.listdir(output_dir)
-            json_files = sorted([f for f in files if f.endswith('.json')])
+            json_files = self._get_json_files(output_dir)
             for json_file in json_files:
-                file_path = os.path.join(output_dir, json_file)
+                task_name = os.path.splitext(json_file)[0]
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        content = json.load(f)
-                    task_name = os.path.splitext(json_file)[0]
+                    content = self._get_task_data(task_name)
                     task_data_list.append({
                         'file_name': json_file,
                         'task_name': task_name,
@@ -31,12 +29,11 @@ class TaskData(BaseTask):
                 except Exception as e:
                     task_data_list.append({
                         'file_name': json_file,
-                        'task_name': os.path.splitext(json_file)[0],
+                        'task_name': task_name,
                         'error': str(e)
                     })
         except Exception as e:
             return {"tasks": [], "error": str(e)}
-        
         return {"tasks": task_data_list}
 
     def text_output(self, data: Dict[str, Any]) -> str:
@@ -54,7 +51,7 @@ class TaskData(BaseTask):
                 time_elapsed = content.get('time_elapsed_ms', 0)
                 lines.append(f"{task_name}: {time_elapsed:.2f}ms")
         return ' | '.join(lines)
-    
+
     def html_output(self, data: Dict[str, Any]) -> str:
         """Generate HTML output displaying task data in formatted cards."""
         tasks = data.get('tasks', [])
@@ -89,3 +86,8 @@ class TaskData(BaseTask):
 
     def interval(self) -> int:
         return 5
+
+    def _get_json_files(self, output_dir: str) -> list:
+        """Get sorted list of JSON files from the output directory."""
+        files = os.listdir(output_dir)
+        return sorted([f for f in files if f.endswith('.json')])

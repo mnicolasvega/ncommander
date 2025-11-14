@@ -76,3 +76,15 @@ class BaseTask(TaskInterface):
         if dir_path in volume_mappings:
             return volume_mappings[dir_path]['bind']
         return dir_path
+
+    def _get_task_data(self, task_name: str) -> Dict[str, Any]:
+        """
+        Read a JSON task file from the output directory and return its content.
+        Raises an exception if the file is not found or cannot be parsed.
+        """
+        task_dir = os.path.dirname(os.path.abspath(__file__))
+        commander_dir = os.path.dirname(task_dir)
+        output_dir = os.path.join(commander_dir, 'tmp', 'output')
+        file_path = os.path.join(output_dir, f"{task_name}.json")
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
