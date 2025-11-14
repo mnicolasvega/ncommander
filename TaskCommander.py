@@ -128,21 +128,22 @@ class TaskCommander:
         DONT_BLOCK_CONSOLE = True
         KILL_CONTAINER_AFTER_FINISH = False
         commander_dir = os.path.dirname(os.path.abspath(__file__))
-        os.makedirs(f"{commander_dir}/tmp", exist_ok=True)
+        os.makedirs(f"{commander_dir}/tmp/tasks", exist_ok=True)
         client = docker.from_env()
         task_name = task.name()
         image_tag = f"task-commander:{task_name}"
         image_exists = self.container_builder.does_task_dockerfile_exist(client, commander_dir, task_name, image_tag)
         if not image_exists:
             dockerfile_template_path = f"{commander_dir}/container/Dockerfile"
-            path_task_dockerfile = f"{commander_dir}/tmp/{task_name}/container"
-            os.makedirs(path_task_dockerfile, exist_ok=True)
-            self.container_builder.create_task_dockerfile(task, path_task_dockerfile, dockerfile_template_path)
+            path_task_dir = f"{commander_dir}/tmp/tasks/{task_name}"
+            os.makedirs(path_task_dir, exist_ok=True)
+            os.makedirs(f"{path_task_dir}/container", exist_ok=True)
+            self.container_builder.create_task_dockerfile(task, path_task_dir, dockerfile_template_path)
             if self._cfg['print_docker_container_lifecycle']:
-                self._print(f"Building Docker image '{image_tag}' from {path_task_dockerfile}")
+                self._print(f"Building Docker image '{image_tag}' from {path_task_dir}")
             try:
                 image, build_logs = client.images.build(
-                    path = path_task_dockerfile,
+                    path = path_task_dir,
                     tag = image_tag,
                     rm = True,  # Remove intermediate containers
                     forcerm = True  # Always remove intermediate containers
@@ -158,7 +159,7 @@ class TaskCommander:
             command = self.container_builder.get_container_cmd(task, params),
             detach = DONT_BLOCK_CONSOLE,
             remove = KILL_CONTAINER_AFTER_FINISH,
-            working_dir = "/app",
+            working_dir = f"/app/tmp/tasks/{task_name}/container",
             volumes = {
                 commander_dir: {
                     "bind": "/app",

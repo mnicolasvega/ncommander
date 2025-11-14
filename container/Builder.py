@@ -54,7 +54,7 @@ class Builder:
 
     def does_task_dockerfile_exist(self, client: DockerClient, dir: str, task_name: str, image_tag: str) -> bool:
         image_exists = False
-        has_dockerfile = os.path.exists(f"{dir}/tmp/{task_name}/container/Dockerfile")
+        has_dockerfile = os.path.exists(f"{dir}/tmp/tasks/{task_name}/Dockerfile")
         if not self.FORCE_REBUILD and not has_dockerfile:
             try:
                 client.images.get(image_tag)
@@ -92,7 +92,7 @@ EOF
 python -m venv /tmp/venv
 . /tmp/venv/bin/activate
 pip install --no-cache-dir --root-user-action=ignore -r /tmp/requirements.txt"""
-        cmd_run_python = f"""python TaskLauncher.py \
+        cmd_run_python = f"""python /app/TaskLauncher.py \
             --outdir {output_dir} \
             --task {task.__module__} \
             --data '{json.dumps(params)}'"""
