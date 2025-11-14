@@ -1,4 +1,5 @@
 from container.Builder import Builder as DockerBuilder
+from container.Cleaner import Cleaner
 from docker.errors import DockerException
 from docker.models.containers import Container
 from task.OutputParser import OutputParser
@@ -35,12 +36,14 @@ class TaskCommander:
         }
         self.container_builder = DockerBuilder()
         self.output_parser = OutputParser()
+        self.cleaner = Cleaner()
         self.last_execution = {}
         self.running_containers = {}
-        
+
     def run(self, tasks: List[dict]) -> None:
         """Main execution loop for running tasks."""
         self._initialize()
+        self._cleanup_orphaned()
         count = 0
         tasks_output = {}
         try:
@@ -51,18 +54,13 @@ class TaskCommander:
                 self.output_parser.build_html(tasks, tasks_output)
                 finished_tasks_output = self._handle_finished_tasks()
                 for task_dict in tasks:
-                    task = task_dict['task']
-                    params = task_dict['parameters']
-                    task_name = task.name()
-                    if self._should_run_task(task):
-                        execution_data = self._run_task(task, params)
+                    task_result = self._execute_task(task_dict)
+                    if task_result:
+                        task_name, execution_data = task_result
                         if task_name not in finished_tasks_output:
                             finished_tasks_output[task_name] = execution_data
                         else:
                             finished_tasks_output[task_name].update(execution_data)
-                        if 'container' in execution_data:
-                            self.running_containers[task_name] = execution_data['container']
-                        self.last_execution[task_name] = time.time()
                     self.output_parser.build_html(tasks, tasks_output)
                 tasks_output.update(finished_tasks_output)
                 time.sleep(1)
@@ -70,6 +68,21 @@ class TaskCommander:
             self._print("interrupted by user")
         except Exception as e:
             self._print(f"unhandled exception: {e}")
+        finally:
+            self._cleanup_running()
+
+    def _execute_task(self, task_dict: dict) -> Tuple[str, Dict[str, Any]] | None:
+        """Execute a task if needed and return (task_name, execution_data) or None."""
+        task = task_dict['task']
+        params = task_dict['parameters']
+        task_name = task.name()
+        if self._should_run_task(task):
+            execution_data = self._run_task(task, params)
+            if 'container' in execution_data:
+                self.running_containers[task_name] = execution_data['container']
+            self.last_execution[task_name] = time.time()
+            return task_name, execution_data
+        return None
 
     def _run_task(self, task: TaskInterface, params: Dict[str, Any]) -> Dict[str, Any]:
         in_container = not self._cfg['run_containerless']
@@ -236,4 +249,25 @@ class TaskCommander:
 
     def _signal_handler(self, signal: int, frame: Optional[FrameType]) -> None:
         self._print(f"interrupt signal detected. Closing...")
+        self._cleanup_running()
         sys.exit(0)
+
+    def _cleanup_orphaned(self) -> None:
+        """Cleanup orphaned containers from previous runs."""
+        try:
+            cleaned_ids = self.cleaner.cleanup_orphaned_containers()
+            if cleaned_ids:
+                cleaned_ids_str = ", ".join(cleaned_ids)
+                self._print(f"Found {len(cleaned_ids)} orphaned container(s) from previous run:\n  {cleaned_ids_str}")
+        except Exception as e:
+            self._print(f"[docker] Warning: Could not check for orphaned containers: {e}")
+
+    def _cleanup_running(self) -> None:
+        """Cleanup currently running containers."""
+        try:
+            cleaned_ids = self.cleaner.cleanup_containers(self.running_containers)
+            if cleaned_ids:
+                self._print(f"Cleaning up {len(cleaned_ids)} running container(s)...")
+                self._print("Cleanup complete")
+        except Exception as e:
+            self._print(f"[docker] Warning: Could not cleanup containers: {e}")
