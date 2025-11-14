@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from task.DirManager import DirManager
 from task.DirObserver import DirObserver
 from task.FlaskTask import FlaskTask
 from task.Message import Message
@@ -22,11 +23,11 @@ def main() -> None:
             'parameters': {'port': 7000},
             'order': 1
         },
-        # {
-        #     'task': YouTubeScannerTask(),
-        #     'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
-        #     'order': 1
-        # },
+        #{
+        #    'task': YouTubeScannerTask(),
+        #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
+        #    'order': 1
+        #},
         {
             'task': Message(),
             'parameters': {},
@@ -41,6 +42,11 @@ def main() -> None:
             'task': SystemMonitor(),
             'parameters': {},
             'order': 4
+        },
+        {
+            'task': DirManager(),
+            'parameters': {},
+            'order': 5
         },
     ]
     commander = TaskCommander(
