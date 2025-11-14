@@ -30,10 +30,12 @@ class FlaskTask(BaseTask):
         return self._start_server(script_path, pid_path, log_path, host, port, url)
 
     def html_output(self, data: Dict[str, Any]) -> str:
-        url = data.get('url', '')
-        status = data.get('status', '')
-        pid = data.get('pid', '')
-        return f"<html><body><p>Flask server {status}. PID: {pid}. <a href='{url}' target='_blank'>{url}</a></p></body></html>"
+        html = self._render_html_from_template('template/FlaskTask.html', {
+            'url': data.get('url', ''),
+            'status': data.get('status', ''),
+            'pid': str(data.get('pid', ''))
+        })
+        return html
 
     def text_output(self, data: Dict[str, Any]) -> str:
         status = data.get('status', '')
