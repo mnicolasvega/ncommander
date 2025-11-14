@@ -4,10 +4,10 @@ from typing import Any, Dict
 import os
 
 class UI(FlaskTask):
-    """Extends FlaskTask to serve the generated output.html from web.Builder."""
+    """Extends FlaskTask to dynamically generate and serve HTML from task outputs."""
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
-        """Start Flask server serving the output.html."""
+        """Start Flask server that dynamically generates HTML from task outputs."""
         in_container = carry.get('in_container', False)
         dependency_error = self._check_flask_dependency(in_container)
         if dependency_error:
@@ -32,14 +32,14 @@ class UI(FlaskTask):
     def _generate_ui_server_script(self, script_path: str, host: str, port: int, dir_root: str) -> None:
         """Generate Flask server script from template with path, host and port substitution."""
         os.makedirs(os.path.dirname(script_path), exist_ok=True)
-        output_html_path = os.path.join(os.path.dirname(dir_root), "tmp", "output.html")
         task_template_dir = os.path.join(os.path.dirname(dir_root), "task", "template")
+        tasks_config_path = os.path.join(os.path.dirname(dir_root), "tmp", "output.json")
         template_path = os.path.join(os.path.dirname(__file__), 'ui_server_template.py')
         with open(template_path, 'r', encoding='utf-8') as f:
             server_code = f.read()
         server_code = server_code \
-            .replace('{{output_html_path}}', output_html_path) \
             .replace('{{task_template_dir}}', task_template_dir) \
+            .replace('{{tasks_config_path}}', tasks_config_path) \
             .replace('{{host}}', host) \
             .replace('{{port}}', str(port))
         with open(script_path, 'w', encoding='utf-8') as f:

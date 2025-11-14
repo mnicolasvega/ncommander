@@ -43,6 +43,7 @@ class TaskCommander:
     def run(self, tasks: List[dict]) -> None:
         """Main execution loop for running tasks."""
         self._initialize()
+        self._save_tasks_config(tasks)
         self._cleanup_orphaned()
         count = 0
         tasks_output = {}
@@ -51,7 +52,6 @@ class TaskCommander:
                 count += 1
                 if self._cfg['print_cycles']:
                     self._print(f"executing cycle #{count}")
-                self.output_parser.build_html(tasks, tasks_output)
                 finished_tasks_output = self._handle_finished_tasks()
                 for task_dict in tasks:
                     task_result = self._execute_task(task_dict)
@@ -61,7 +61,6 @@ class TaskCommander:
                             finished_tasks_output[task_name] = execution_data
                         else:
                             finished_tasks_output[task_name].update(execution_data)
-                    self.output_parser.build_html(tasks, tasks_output)
                 tasks_output.update(finished_tasks_output)
                 time.sleep(1)
         except KeyboardInterrupt:
@@ -242,6 +241,18 @@ class TaskCommander:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
         self._print(f">> commander v{self.VERSION}")
+
+    def _save_tasks_config(self, tasks: List[dict]) -> None:
+        """Save tasks configuration to a JSON file for UI server."""
+        commander_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = f"{commander_dir}/tmp/output.json"
+        tasks_config = [{
+            'name': task_dict['task'].name(),
+            'order': task_dict['order']
+        } for task_dict in tasks]
+        tasks_config = sorted(tasks_config, key=lambda x: x['order'])
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(tasks_config, f, indent=2)
 
     def _signal_handler(self, signal: int, frame: Optional[FrameType]) -> None:
         self._print(f"interrupt signal detected. Closing...")
