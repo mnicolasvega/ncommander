@@ -60,8 +60,12 @@ class OutputParser:
     def _load_task_executions(self, tasks_output: Dict[str, dict]) -> Dict[str, dict]:
         tasks = {}
         for task_name, output in tasks_output.items():
-            data = output.get('data', {})
-            html = output.get('html', "")
+            data = output.get('data')
+            if not data:
+                data = self.get_text(task_name, "output.log")
+            html = output.get('html')
+            if not html:
+                html = self.get_html(task_name)
             tasks[task_name] = {
                 'html': html,
                 'data': data,
