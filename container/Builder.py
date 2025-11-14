@@ -5,7 +5,7 @@ import docker
 import json
 import os
 
-OUTPUT_DIR = "out"
+OUTPUT_DIR = "tmp"
 
 class Builder:
     TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -54,7 +54,7 @@ class Builder:
 
     def does_task_dockerfile_exist(self, client: DockerClient, dir: str, task_name: str, image_tag: str) -> bool:
         image_exists = False
-        has_dockerfile = os.path.exists(f"{dir}/docker/.generated/{task_name}/Dockerfile")
+        has_dockerfile = os.path.exists(f"{dir}/tmp/{task_name}/container/Dockerfile")
         if not self.FORCE_REBUILD and not has_dockerfile:
             try:
                 client.images.get(image_tag)

@@ -49,7 +49,7 @@ class OutputParser:
         This file is produced by the result of a TaskInterface method html_output.
         """
         try:
-            html_path = self.__get_path(f"output/{task_name}.html")
+            html_path = self.__get_path(f"{task_name}/out.html")
             if not os.path.exists(html_path):
                 return ""
             with open(html_path, "r", encoding="utf-8", errors="replace") as f:
@@ -90,4 +90,4 @@ class OutputParser:
     def __get_path(self, file_name: str) -> str:
         task_dir = os.path.dirname(os.path.abspath(__file__))
         commander_dir = os.path.dirname(task_dir)
-        return f"{commander_dir}/out/{file_name}"
+        return f"{commander_dir}/tmp/{file_name}"

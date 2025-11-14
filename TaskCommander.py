@@ -128,14 +128,14 @@ class TaskCommander:
         DONT_BLOCK_CONSOLE = True
         KILL_CONTAINER_AFTER_FINISH = False
         commander_dir = os.path.dirname(os.path.abspath(__file__))
-        os.makedirs(f"{commander_dir}/out", exist_ok=True)
+        os.makedirs(f"{commander_dir}/tmp", exist_ok=True)
         client = docker.from_env()
         task_name = task.name()
         image_tag = f"task-commander:{task_name}"
         image_exists = self.container_builder.does_task_dockerfile_exist(client, commander_dir, task_name, image_tag)
         if not image_exists:
-            dockerfile_template_path = f"{commander_dir}/docker/Dockerfile"
-            path_task_dockerfile = f"{commander_dir}/docker/.generated/{task_name}"
+            dockerfile_template_path = f"{commander_dir}/container/Dockerfile"
+            path_task_dockerfile = f"{commander_dir}/tmp/{task_name}/container"
             os.makedirs(path_task_dockerfile, exist_ok=True)
             self.container_builder.create_task_dockerfile(task, path_task_dockerfile, dockerfile_template_path)
             if self._cfg['print_docker_container_lifecycle']:
