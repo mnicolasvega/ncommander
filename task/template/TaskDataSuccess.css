@@ -1,0 +1,33 @@
+.task-data-success-card {
+    border: 1px solid #4caf50;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.task-data-success-title {
+    margin: 0 0 10px 0;
+    color: #00aa00;
+}
+
+.task-data-info {
+    margin: 5px 0;
+}
+
+.task-data-details {
+    margin: 10px 0;
+}
+
+.task-data-summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.task-data-content {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 10px 0;
+}

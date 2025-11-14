@@ -4,6 +4,7 @@ from task.DirObserver import DirObserver
 from task.FlaskTask import FlaskTask
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
+from task.TaskData import TaskData
 from task.UI import UI
 from task.YouTubeScannerTask import YouTubeScannerTask
 from TaskCommander import TaskCommander
@@ -28,18 +29,18 @@ def main() -> None:
         {
             'task': UI(),
             'parameters': {'port': 7000},
-            'order': 1
+            'order': 3
         },
         #{
         #    'task': YouTubeScannerTask(),
         #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
         #    'order': 1
         #},
-        {
-            'task': Message(),
-            'parameters': {},
-            'order': 2
-        },
+        #{
+        #    'task': Message(),
+        #    'parameters': {},
+        #    'order': 2
+        #},
         {
             'task': DirObserver(),
             'parameters': {
@@ -53,13 +54,18 @@ def main() -> None:
         {
             'task': SystemMonitor(),
             'parameters': {},
-            'order': 4
+            'order': 2
         },
         {
-            'task': DirManager(),
+            'task': TaskData(),
             'parameters': {},
-            'order': 5
+            'order': 1
         },
+        #{
+        #    'task': DirManager(),
+        #    'parameters': {},
+        #    'order': 5
+        #},
     ]
     commander = TaskCommander(
         print_cycles = DEBUG,

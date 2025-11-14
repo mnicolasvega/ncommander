@@ -7,7 +7,7 @@ Counts files in the specified directories.
 """
 class DirObserver(BaseTask):
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
-        input_paths = carry.get('paths', ['/'])
+        input_paths = carry.get('paths', [])
         paths = []
         for original_path in input_paths:
             dir_path = self._get_volume(original_path, carry)
