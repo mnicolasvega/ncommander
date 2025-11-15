@@ -4,6 +4,7 @@ import html
 import json
 import os
 import uuid
+import yt_dlp
 
 class YouTubeDownloader(BaseTask):
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
@@ -128,31 +129,76 @@ class YouTubeDownloader(BaseTask):
 
     def _download_video(self, video_url: str) -> Dict[str, Any]:
         """Download a single YouTube video."""
-        import yt_dlp
         video_uuid = str(uuid.uuid4())
         task_dir = os.path.dirname(os.path.abspath(__file__))
         commander_dir = os.path.dirname(task_dir)
-        download_dir = os.path.join(commander_dir, 'var', self.name(), video_uuid)
-        os.makedirs(download_dir, exist_ok=True)
+        var_root = os.path.join(commander_dir, 'var', self.name())
         self._print(f"Downloading: {video_url} -> {video_uuid}")
         ydl_opts = self._get_config()
+        ydl_opts['outtmpl'] = os.path.join(var_root, '%(title)s.%(ext)s')
+        result, probe_video_id, probe_title, probe_duration = self._check_video_exists(video_url, ydl_opts, var_root, video_uuid)
+        if result:
+            return result
+        download_dir = os.path.join(var_root, probe_video_id)
+        os.makedirs(download_dir, exist_ok=True)
         ydl_opts['outtmpl'] = os.path.join(download_dir, '%(title)s.%(ext)s')
+        info, filename = self._perform_download(video_url, ydl_opts, probe_video_id, probe_title, probe_duration)
+        video_id = info.get('id', probe_video_id)
+        title = info.get('title', probe_title)
+        duration = info.get('duration', probe_duration)
+        channel_name = info.get('uploader') or info.get('channel') or ''
+        self._update_video_ids_map(var_root, video_id, video_uuid, channel_name, title)
+        self._print(f"Downloaded: {title} ({video_id})")
+        return {
+            "url": video_url,
+            "video_id": video_id,
+            "video_uuid": video_uuid,
+            "title": title,
+            "duration": f"{duration}s" if duration else "unknown",
+            "path": filename,
+            "status": "success"
+        }
+
+    def _check_video_exists(self, video_url: str, ydl_opts: Dict[str, Any], var_root: str, video_uuid: str) -> tuple:
+        """Check if video already exists. Returns (result_dict or None, probe_video_id, probe_title, probe_duration)."""
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-            video_id = info.get('id', video_uuid)
-            title = info.get('title', 'Unknown')
-            duration = info.get('duration', 0)
-            filename = ydl.prepare_filename(info)
-            self._print(f"Downloaded: {title} ({video_id})")
+            info_probe = ydl.extract_info(video_url, download=False)
+            probe_video_id = info_probe.get('id', video_uuid)
+            probe_title = info_probe.get('title', 'Unknown')
+            probe_duration = info_probe.get('duration', 0)
+            base_name = os.path.basename(ydl.prepare_filename(info_probe))
+        existing_path = None
+        for root, dirs, files in os.walk(var_root):
+            if base_name in files:
+                existing_path = os.path.join(root, base_name)
+                break
+        if existing_path:
             return {
                 "url": video_url,
-                "video_id": video_id,
-                "video_uuid": video_uuid,
-                "title": title,
-                "duration": f"{duration}s" if duration else "unknown",
-                "path": filename,
+                "video_id": probe_video_id,
+                "video_uuid": "",
+                "title": probe_title,
+                "duration": f"{probe_duration}s" if probe_duration else "unknown",
+                "path": existing_path,
                 "status": "success"
-            }
+            }, probe_video_id, probe_title, probe_duration
+        return None, probe_video_id, probe_title, probe_duration
+
+    def _update_video_ids_map(self, var_root: str, video_id: str, video_uuid: str, channel_name: str, title: str) -> None:
+        """Append video mapping to uuids.csv."""
+        uuids_file = os.path.join(var_root, 'uuids.csv')
+        try:
+            with open(uuids_file, 'a', encoding='utf-8') as f:
+                f.write(f"{video_id},{video_uuid},{channel_name},{title.replace('\n', ' ').replace('\r', ' ')}\n")
+        except Exception:
+            pass
+
+    def _perform_download(self, video_url: str, ydl_opts: Dict[str, Any], probe_video_id: str, probe_title: str, probe_duration: int) -> tuple:
+        """Download video file and return (info dict, filename)."""
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=True)
+            filename = ydl.prepare_filename(info)
+        return info, filename
 
     def _get_config(self) -> Dict[str, Any]:
         """Load yt-dlp configuration from /cfg/yt_downloader_config.json."""
