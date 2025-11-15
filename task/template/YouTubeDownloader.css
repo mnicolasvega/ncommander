@@ -11,7 +11,7 @@
     margin: 5px 0;
     font-size: 0.9rem;
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     text-align: left;
     word-wrap: break-word;
     overflow-wrap: break-word;

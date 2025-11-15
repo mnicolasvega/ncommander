@@ -2,20 +2,30 @@
     border: none;
     border-collapse: collapse;
     width: 100%;
+    padding: 0;
+    margin: 0;
 }
 
 .whisper-subtitle-table-row {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.whisper-subtitle-table td {
+    padding: 0;
+    margin: 0;
     border: none;
 }
 
 .whisper-subtitle-timestamp {
     text-align: right;
-    padding: 0;
+    padding: 0 0 0 5px;
     font-family: monospace;
     vertical-align: top;
 }
 
 .whisper-subtitle-text {
-    padding: 0 0 0 10px;
+    padding: 0 0 0 5px;
     vertical-align: top;
 }

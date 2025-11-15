@@ -1,5 +1,6 @@
 from task.BaseTask import BaseTask
 from typing import Any, Dict
+from service.FfmpegService import FfmpegService
 import html
 import json
 import os
@@ -8,6 +9,10 @@ import uuid
 import yt_dlp
 
 class YouTubeDownloader(BaseTask):
+    def __init__(self):
+        super().__init__()
+        self._ffmpeg_service = FfmpegService()
+
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         try:
             video_urls = carry.get('video_urls', [])
@@ -136,6 +141,14 @@ class YouTubeDownloader(BaseTask):
     def max_time_expected(self) -> float | None:
         return None
 
+    def _get_video_duration(self, video_path: str) -> str:
+        """Get video duration using ffprobe."""
+        try:
+            duration_seconds = self._ffmpeg_service.get_video_duration(video_path)
+            return f"{int(duration_seconds)}s"
+        except Exception:
+            return "-"
+
     def _extract_video_id_from_url(self, video_url: str) -> str | None:
         """Extract YouTube video ID from URL without making API calls."""
         patterns = [
@@ -167,12 +180,14 @@ class YouTubeDownloader(BaseTask):
                     existing_path = os.path.join(video_dir, file)
                     # Extract title from filename (remove extension)
                     title = os.path.splitext(file)[0]
+                    # Calculate duration from video file
+                    duration = self._get_video_duration(existing_path)
                     return {
                         "url": video_url,
                         "video_id": video_id,
                         "video_uuid": "",
                         "title": title,
-                        "duration": "unknown",
+                        "duration": duration,
                         "path": existing_path,
                         "status": "success"
                     }
@@ -230,12 +245,14 @@ class YouTubeDownloader(BaseTask):
             for file in os.listdir(video_dir):
                 if file.lower().endswith(video_extensions):
                     existing_path = os.path.join(video_dir, file)
+                    # Calculate duration from video file if not available
+                    duration = f"{probe_duration}s" if probe_duration else self._get_video_duration(existing_path)
                     return {
                         "url": video_url,
                         "video_id": probe_video_id,
                         "video_uuid": "",
                         "title": probe_title,
-                        "duration": f"{probe_duration}s" if probe_duration else "unknown",
+                        "duration": duration,
                         "path": existing_path,
                         "status": "success"
                     }, probe_video_id, probe_title, probe_duration
