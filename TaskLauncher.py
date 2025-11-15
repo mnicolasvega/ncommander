@@ -67,8 +67,9 @@ class TaskLauncher:
             f.write(json_str + "\n")
 
     def _write_task_output(self, output_path: str, text_output: str) -> None:
-        with open(f"{output_path}/output text.txt", "a", encoding="utf-8") as f:
-            f.write("%s: %s\n" % (self._task.name(), text_output))
+        txt_path = os.path.join(output_path, "output", f"{self._task.name()}.txt")
+        with open(txt_path, "w", encoding="utf-8") as f:
+            f.write(text_output)
 
     def _write_task_html_output(self, output_path: str, html_output: str) -> None:
         html_path = os.path.join(output_path, "output", f"{self._task.name()}.html")
