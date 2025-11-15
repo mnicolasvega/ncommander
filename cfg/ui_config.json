@@ -1,15 +1,15 @@
 [
   {
+    "name": "llama_video_summary",
+    "order": 0
+  },
+  {
     "name": "whisper_subtitles",
     "order": 1
   },
   {
     "name": "youtube_downloader",
     "order": 2
-  },
-  {
-    "name": "random_messager",
-    "order": 99
   },
   {
     "name": "system_monitor",

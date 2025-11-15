@@ -3,6 +3,7 @@ from task.DirManager import DirManager
 from task.DirObserver import DirObserver
 from task.FlaskTask import FlaskTask
 from task.LlamaLLM import LlamaLLM
+from task.LlamaVideoSummary import LlamaVideoSummary
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
 from task.TaskData import TaskData
@@ -70,10 +71,20 @@ def main() -> None:
             'order': 1
         },
         {
-            'task': Message(),
-            'parameters': {},
-            'order': 99
+            'task': LlamaVideoSummary(),
+            'parameters': {
+                'dir_path': '/app/var/youtube_downloader',
+                'model_name': LLM_MODEL_NAME,
+                'max_tokens': 4096 * 2,
+                'temperature': 0.2,
+            },
+            'order': 0
         },
+        #{
+        #    'task': Message(),
+        #    'parameters': {},
+        #    'order': 99
+        #},
         #{
         #    'task': DirObserver(),
         #    'parameters': {
