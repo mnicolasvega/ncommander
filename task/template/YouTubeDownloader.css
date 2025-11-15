@@ -27,7 +27,8 @@
 
 /* YouTube Downloader specific styles */
 .youtube-downloader-container {
-    margin: 10px 0;
+    margin: 5px 0;
+    text-align: left;
 }
 
 .youtube-downloader-card {
@@ -39,7 +40,6 @@
 }
 
 /* .youtube-downloader-section and .youtube-downloader-label inherit from base classes */
-
 .youtube-downloader-error-card {
     border: 1px solid #f44336;
     border-radius: 4px;
