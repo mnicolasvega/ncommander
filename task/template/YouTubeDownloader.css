@@ -1,7 +1,7 @@
 /* Base styles shared by youtube-downloader and whisper-subtitle components */
 .task-result-card {
     border-radius: 4px;
-    padding: 0px;
+    padding: 10px;
     margin: 10px auto;
     background: rgba(204, 204, 204, 0.3); /* 20% darker than white */
     max-width: 90%;
@@ -28,13 +28,25 @@
 /* Table styles */
 .task-result-table {
     width: 100%;
+    max-width: 90%;
     border-collapse: collapse;
     border: none;
+    background: rgba(179, 179, 179, 0.3); /* 10% darker than white */
 }
 
 .task-result-table tbody tr td {
-    padding: 0;
+    padding: 5px;
     border: none;
+    vertical-align: top;
+}
+
+.task-result-table tbody tr td:first-child {
+    width: auto;
+    white-space: nowrap;
+}
+
+.task-result-table tbody tr td:last-child {
+    width: 100%;
 }
 
 /* YouTube Downloader specific styles */

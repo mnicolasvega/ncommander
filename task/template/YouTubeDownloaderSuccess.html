@@ -1,20 +1,30 @@
 <div class="youtube-downloader-card task-result-card">
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">✅ Status:</span> Completed
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🎬 Video Title:</span> {{title}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🆔 Video ID:</span> {{video_id}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">⏱️ Duration:</span> {{duration}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🔗 URL:</span> <a href="{{url}}" target="_blank">{{url}}</a>
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">📁 Path:</span> <code>{{path}}</code>
-    </div>
+    <table class="task-result-table">
+        <tbody>
+            <tr>
+                <td class="task-result-label">✅ Status:</td>
+                <td>Completed</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🎬 Video Title:</td>
+                <td>{{title}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🆔 Video ID:</td>
+                <td>{{video_id}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">⏱️ Duration:</td>
+                <td>{{duration}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🔗 URL:</td>
+                <td><a href="{{url}}" target="_blank">{{url}}</a></td>
+            </tr>
+            <tr>
+                <td class="task-result-label">📁 Path:</td>
+                <td><code>{{path}}</code></td>
+            </tr>
+        </tbody>
+    </table>
 </div>

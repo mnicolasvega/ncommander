@@ -1,20 +1,30 @@
 <div class="youtube-downloader-card task-result-card">
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">📊 Status:</span> {{status}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">📁 File:</span> <code>{{path}}</code>
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">📝 SRT:</span> <code>{{srt}}</code>
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🌐 Language:</span> {{language}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🔢 Segments:</span> {{segments}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">💬 Subtitle:</span> <code class="subtitle-content">{{parsed_srt_content}}</code>
-    </div>
+    <table class="task-result-table">
+        <tbody>
+            <tr>
+                <td class="task-result-label">📊 Status:</td>
+                <td>{{status}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">📁 File:</td>
+                <td><code>{{path}}</code></td>
+            </tr>
+            <tr>
+                <td class="task-result-label">📝 SRT:</td>
+                <td><code>{{srt}}</code></td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🌐 Language:</td>
+                <td>{{language}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🔢 Segments:</td>
+                <td>{{segments}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">💬 Subtitle:</td>
+                <td><code class="subtitle-content">{{parsed_srt_content}}</code></td>
+            </tr>
+        </tbody>
+    </table>
 </div>

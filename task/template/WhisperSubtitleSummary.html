@@ -1,20 +1,30 @@
 <div class="youtube-downloader-card task-result-card">
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">📁 Directory:</span> <code>{{dir_path}}</code>
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🤖 Model:</span> {{model}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">🌐 Language:</span> {{language}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">✅ Processed:</span> {{processed}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">⏩ Skipped:</span> {{skipped}}
-    </div>
-    <div class="youtube-downloader-section task-result-section">
-        <span class="youtube-downloader-label task-result-label">❌ Failed:</span> {{failed}}
-    </div>
+    <table class="task-result-table">
+        <tbody>
+            <tr>
+                <td class="task-result-label">📁 Directory:</td>
+                <td><code>{{dir_path}}</code></td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🤖 Model:</td>
+                <td>{{model}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">🌐 Language:</td>
+                <td>{{language}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">✅ Processed:</td>
+                <td>{{processed}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">⏩ Skipped:</td>
+                <td>{{skipped}}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">❌ Failed:</td>
+                <td>{{failed}}</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
