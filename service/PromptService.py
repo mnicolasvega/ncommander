@@ -1,5 +1,5 @@
 class PromptService:
-    def get_formatted_prompt(prompt: str) -> str:
+    def get_formatted_prompt(self, prompt: str) -> str:
         """Format prompt with instructions to guide the LLM."""
         instructions = [
             "Provide a clear, informative answer with medium length",

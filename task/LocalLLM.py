@@ -9,6 +9,10 @@ import urllib.request
 class LocalLLM(BaseTask):
     DEFAULT_MODEL_URL = "https://huggingface.co/TheBloke/TinyLLaMA-1.1b-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
     DEFAULT_MODEL_NAME = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    MODEL_URLS = {
+        "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf": "https://huggingface.co/TheBloke/TinyLLaMA-1.1b-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+        "mistral-7b-instruct-v0.2.Q4_K_M.gguf": "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
+    }
 
     def __init__(self) -> None:
         super().__init__()
@@ -25,13 +29,11 @@ class LocalLLM(BaseTask):
             response = self._evaluate_prompt(prompt, container_model_path, carry)
             return {"prompt": prompt, "response": response}
         except LocalLLMError as e:
-            error_msg = f"LocalLLMError: {str(e)}"
-            self._print(error_msg)
+            self._print(f"Error: {str(e)}")
             return {"prompt": carry.get('prompt', ''), "error": str(e)}
         except Exception as e:
             import traceback
-            error_msg = f"Unexpected error: {str(e)}"
-            self._print(error_msg)
+            self._print(f"Error: {str(e)}")
             self._print(f"Traceback: {traceback.format_exc()}")
             return {"prompt": carry.get('prompt', ''), "error": str(e)}
 
@@ -74,7 +76,7 @@ class LocalLLM(BaseTask):
     def volumes(self, params: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
         task_dir = os.path.dirname(os.path.abspath(__file__))
         commander_dir = os.path.dirname(task_dir)
-        models_dir = os.path.join(commander_dir, 'model')
+        models_dir = os.path.join(commander_dir, 'lib', 'model')
         volumes = {
             models_dir: {
                 "bind": "/app/lib/model",
@@ -111,12 +113,14 @@ class LocalLLM(BaseTask):
         return text
 
     def _get_model_path(self, model_name: str) -> str:
-        """Get model path: use provided name, or download default if not provided."""
+        """Resolve or download the model under lib/model based on model_name."""
         if model_name:
             model_name = str(model_name).strip()
-            return self._resolve_model_path(model_name)
-        else:
-            return self._get_or_download_default_model()
+            try:
+                return self._resolve_model_path(model_name)
+            except LocalLLMError:
+                return self._download_model_by_name(model_name)
+        return self._get_or_download_default_model()
 
     def _get_model(self, llm_model_path: str, carry: Dict[str, Any]):
         """Load and initialize the LLM model."""
@@ -124,29 +128,41 @@ class LocalLLM(BaseTask):
         n_ctx = int(carry.get('n_ctx', 2048))
         n_gpu_layers = int(carry.get('n_gpu_layers', 0))
         self._print(f"Loading model: {llm_model_path}")
-        llm = Llama(
-            model_path = llm_model_path,
-            n_ctx = n_ctx,
-            n_gpu_layers = n_gpu_layers,
-            verbose = True,
-        )
-        self._print(f"Model loaded successfully: {llm_model_path}")
-        return llm
+        try:
+            llm = Llama(
+                model_path = llm_model_path,
+                n_ctx = n_ctx,
+                n_gpu_layers = n_gpu_layers,
+                verbose = True,
+            )
+            self._print(f"Model loaded successfully: {llm_model_path}")
+            return llm
+        except Exception as e:
+            import traceback
+            self._print(f"Error loading model: {e}")
+            self._print(f"Traceback: {traceback.format_exc()}")
+            raise LocalLLMError(f"Failed to load model: {e}")
 
     def _container_model_path(self, model_path: str, params: Dict[str, Any]) -> str:
-        if str(model_path).startswith('/ncommander/'):
+        model_path = os.path.abspath(model_path)
+        if model_path.startswith('/app/'):
             return model_path
-        if 'model/' in str(model_path) or '/model/' in str(model_path):
-            model_name = os.path.basename(model_path)
-            return f"/ncommander/lib/model/{model_name}"
-        mapping = self.volumes(params).get(model_path)
-        return mapping['bind'] if mapping else model_path
+        task_dir = os.path.dirname(os.path.abspath(__file__))
+        commander_dir = os.path.dirname(task_dir)
+        models_dir = os.path.join(commander_dir, 'lib', 'model')
+        if model_path.startswith(models_dir):
+            rel = os.path.relpath(model_path, models_dir)
+            return f"/app/lib/model/{rel}" if rel != '.' else "/app/lib/model"
+        if model_path.startswith(commander_dir):
+            rel = os.path.relpath(model_path, commander_dir)
+            return f"/app/{rel}"
+        return model_path
 
     def _get_or_download_default_model(self) -> str:
         """Download default model to cache if it doesn't exist, return path."""
         task_dir = os.path.dirname(os.path.abspath(__file__))
         commander_dir = os.path.dirname(task_dir)
-        models_dir = os.path.join(commander_dir, 'model')
+        models_dir = os.path.join(commander_dir, 'lib', 'model')
         model_path = os.path.join(models_dir, self.DEFAULT_MODEL_NAME)
         if os.path.exists(model_path):
             return model_path
@@ -157,10 +173,25 @@ class LocalLLM(BaseTask):
                 model_path,
                 reporthook=self._download_progress
             )
-            self._print(f"Model downloaded: {model_path}")
             return model_path
         except Exception as e:
             raise LocalLLMError(f"Failed to download model: {str(e)}")
+
+    def _download_model_by_name(self, model_name: str) -> str:
+        task_dir = os.path.dirname(os.path.abspath(__file__))
+        commander_dir = os.path.dirname(task_dir)
+        models_dir = os.path.join(commander_dir, 'lib', 'model')
+        os.makedirs(models_dir, exist_ok=True)
+        target_path = os.path.join(models_dir, model_name)
+        url = self.MODEL_URLS.get(model_name)
+        if not url:
+            available = ", ".join(sorted(self.MODEL_URLS.keys()))
+            raise LocalLLMError(f"No download URL configured for '{model_name}'. Supported: {available}")
+        try:
+            urllib.request.urlretrieve(url, target_path, reporthook=self._download_progress)
+            return target_path
+        except Exception as e:
+            raise LocalLLMError(f"Failed to download '{model_name}': {e}")
 
     def _download_progress(self, block_num: int, block_size: int, total_size: int) -> None:
         """Report download progress (silent)."""
@@ -169,7 +200,7 @@ class LocalLLM(BaseTask):
     def _resolve_model_path(self, model_path: str) -> str:
         dir_task = os.path.dirname(os.path.abspath(__file__))
         dir_commander = os.path.dirname(dir_task)
-        dir_models = os.path.join(dir_commander, 'model')
+        dir_models = os.path.join(dir_commander, 'lib', 'model')
         model_file_path = os.path.join(dir_models, model_path)
         if os.path.exists(model_file_path):
             return model_file_path
@@ -182,7 +213,7 @@ class LocalLLM(BaseTask):
             models_str = ", ".join(available)
         except LocalLLMError:
             models_str = "(no models available)"
-        raise LocalLLMError(f"Model '{model_path}' not found in model/ directory. Available models: {models_str}")
+        raise LocalLLMError(f"Model '{model_path}' not found in lib/model/ directory. Available models: {models_str}")
 
     def _list_models(self, models_dir: str) -> list[str]:
         """List available .gguf models in the models directory."""
