@@ -97,12 +97,32 @@ class WhisperSubtitleTask(BaseTask):
         items_html_parts: List[str] = []
         for idx, item in enumerate(files, start=1):
             path = html.escape(str(item.get('path', '')))
-            status = html.escape(str(item.get('status', 'unknown')))
+            status_raw = str(item.get('status', 'unknown'))
+            # Add emoji based on status
+            if status_raw == 'success':
+                status = '💾 ' + html.escape(status_raw)
+            elif status_raw == 'skipped':
+                status = '✅ ⏩ ' + html.escape(status_raw)
+            elif status_raw == 'error':
+                status = '❌ ' + html.escape(status_raw)
+            else:
+                status = html.escape(status_raw)
             srt = html.escape(str(item.get('srt', '')))
             err = html.escape(str(item.get('error', '')))
             lang = html.escape(str(item.get('language', '')))
             segs = html.escape(str(item.get('segments', '')))
             secs = html.escape(str(item.get('seconds', '')))
+            
+            # Read SRT file content if it exists
+            srt_content = ''
+            srt_path_raw = item.get('srt', '')
+            if srt_path_raw and os.path.exists(srt_path_raw):
+                try:
+                    with open(srt_path_raw, 'r', encoding='utf-8') as f:
+                        srt_content = html.escape(f.read())
+                except Exception as e:
+                    srt_content = html.escape(f"Error reading file: {str(e)}")
+            
             self._print(f"  [{idx}/{len(files)}] Rendering item: {status} - {path}")
             items_html_parts.append(self._render_html_from_template('template/WhisperSubtitleItem.html', {
                 'path': path,
@@ -112,6 +132,7 @@ class WhisperSubtitleTask(BaseTask):
                 'segments': segs,
                 'seconds': secs,
                 'error': err,
+                'srt_content': srt_content,
             }))
         items_html = "\n".join(items_html_parts)
         self._print(f"Rendering summary widget")

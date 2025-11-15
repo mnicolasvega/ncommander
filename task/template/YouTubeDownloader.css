@@ -1,21 +1,13 @@
-.youtube-downloader-container {
-    margin: 10px 0;
-}
-
-.youtube-downloader-card {
-    border: 1px solid #4caf50;
+/* Base styles shared by youtube-downloader and whisper-subtitle components */
+.task-result-card {
     border-radius: 4px;
     padding: 10px;
     margin: 10px auto;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(204, 204, 204, 0.3); /* 20% darker than white */
     max-width: 90%;
 }
 
-.youtube-downloader-card.youtube-downloader-error {
-    border: 1px solid #f44336;
-}
-
-.youtube-downloader-section {
+.task-result-section {
     margin: 5px 0;
     font-size: 0.9rem;
     display: flex;
@@ -25,20 +17,35 @@
     overflow-wrap: break-word;
 }
 
-.youtube-downloader-label {
+.task-result-label {
     font-weight: bold;
-    color: #1a1a1a;
+    color: #ffffff;
     min-width: 120px;
     display: inline-block;
     text-align: left;
 }
+
+/* YouTube Downloader specific styles */
+.youtube-downloader-container {
+    margin: 10px 0;
+}
+
+.youtube-downloader-card {
+    border: 1px solid #4caf50;
+}
+
+.youtube-downloader-card.youtube-downloader-error {
+    border: 1px solid #f44336;
+}
+
+/* .youtube-downloader-section and .youtube-downloader-label inherit from base classes */
 
 .youtube-downloader-error-card {
     border: 1px solid #f44336;
     border-radius: 4px;
     padding: 10px;
     margin: 10px auto;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(204, 204, 204, 0.3);
     max-width: 90%;
 }
 
@@ -62,4 +69,15 @@
     border-radius: 3px;
     font-family: monospace;
     font-size: 0.85rem;
+}
+
+.youtube-downloader-card code.subtitle-content {
+    display: block;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    margin-top: 5px;
 }
