@@ -52,16 +52,16 @@ def main() -> None:
         #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
         #    'order': 1
         #},
-        #{
-        #    'task': YouTubeDownloader(),
-        #    'parameters': {
-        #        'video_urls': [
-        #            'https://www.youtube.com/watch?v=3QlHvz_N8m8',
-        #            'https://www.youtube.com/watch?v=1WFhPFDRbWU',
-        #        ]
-        #    },
-        #    'order': 1
-        #},
+        {
+            'task': YouTubeDownloader(),
+            'parameters': {
+                'video_urls': [
+                    'https://www.youtube.com/watch?v=3QlHvz_N8m8',
+                    'https://www.youtube.com/watch?v=1WFhPFDRbWU',
+                ]
+            },
+            'order': 1
+        },
         #{
         #    'task': WhisperSubtitleTask(),
         #    'parameters': {

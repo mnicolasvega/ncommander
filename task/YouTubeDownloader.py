@@ -3,6 +3,7 @@ from typing import Any, Dict
 import html
 import json
 import os
+import re
 import uuid
 import yt_dlp
 
@@ -18,6 +19,14 @@ class YouTubeDownloader(BaseTask):
                 if not url_str:
                     continue
                 try:
+                    # Check if video exists locally first (without API call)
+                    existing_result = self._check_local_video_exists(url_str)
+                    if existing_result:
+                        self._print(f"Skipping: {existing_result.get('title', 'Unknown')} ({existing_result.get('video_id', 'unknown')}) - already exists")
+                        downloads.append(existing_result)
+                        continue
+                    
+                    # Video doesn't exist locally, proceed with download
                     result = self._download_video(url_str)
                     downloads.append(result)
                 except Exception as e:
@@ -127,18 +136,64 @@ class YouTubeDownloader(BaseTask):
     def max_time_expected(self) -> float | None:
         return None
 
+    def _extract_video_id_from_url(self, video_url: str) -> str | None:
+        """Extract YouTube video ID from URL without making API calls."""
+        patterns = [
+            r'(?:v=|\/)([0-9A-Za-z_-]{11}).*',
+            r'(?:embed\/|v\/|youtu\.be\/)([0-9A-Za-z_-]{11})',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, video_url)
+            if match:
+                return match.group(1)
+        return None
+
+    def _check_local_video_exists(self, video_url: str) -> Dict[str, Any] | None:
+        """Check if video exists locally without making API calls."""
+        video_id = self._extract_video_id_from_url(video_url)
+        if not video_id:
+            return None
+        
+        task_dir = os.path.dirname(os.path.abspath(__file__))
+        commander_dir = os.path.dirname(task_dir)
+        var_root = os.path.join(commander_dir, 'var', self.name())
+        video_dir = os.path.join(var_root, video_id)
+        
+        if os.path.isdir(video_dir):
+            # Look for video files in the directory
+            video_extensions = ('.mp4', '.webm', '.mkv', '.avi', '.mov', '.flv', '.m4v')
+            for file in os.listdir(video_dir):
+                if file.lower().endswith(video_extensions):
+                    existing_path = os.path.join(video_dir, file)
+                    # Extract title from filename (remove extension)
+                    title = os.path.splitext(file)[0]
+                    return {
+                        "url": video_url,
+                        "video_id": video_id,
+                        "video_uuid": "",
+                        "title": title,
+                        "duration": "unknown",
+                        "path": existing_path,
+                        "status": "success"
+                    }
+        return None
+
     def _download_video(self, video_url: str) -> Dict[str, Any]:
         """Download a single YouTube video."""
         video_uuid = str(uuid.uuid4())
         task_dir = os.path.dirname(os.path.abspath(__file__))
         commander_dir = os.path.dirname(task_dir)
         var_root = os.path.join(commander_dir, 'var', self.name())
-        self._print(f"Downloading: {video_url} -> {video_uuid}")
+        
+        # Get video info and check if it exists (with API call)
         ydl_opts = self._get_config()
         ydl_opts['outtmpl'] = os.path.join(var_root, '%(title)s.%(ext)s')
         result, probe_video_id, probe_title, probe_duration = self._check_video_exists(video_url, ydl_opts, var_root, video_uuid)
         if result:
             return result
+        
+        # Video doesn't exist, proceed with download
+        self._print(f"Downloading: {video_url} -> {video_uuid}")
         download_dir = os.path.join(var_root, probe_video_id)
         os.makedirs(download_dir, exist_ok=True)
         ydl_opts['outtmpl'] = os.path.join(download_dir, '%(title)s.%(ext)s')
@@ -166,22 +221,25 @@ class YouTubeDownloader(BaseTask):
             probe_video_id = info_probe.get('id', video_uuid)
             probe_title = info_probe.get('title', 'Unknown')
             probe_duration = info_probe.get('duration', 0)
-            base_name = os.path.basename(ydl.prepare_filename(info_probe))
-        existing_path = None
-        for root, dirs, files in os.walk(var_root):
-            if base_name in files:
-                existing_path = os.path.join(root, base_name)
-                break
-        if existing_path:
-            return {
-                "url": video_url,
-                "video_id": probe_video_id,
-                "video_uuid": "",
-                "title": probe_title,
-                "duration": f"{probe_duration}s" if probe_duration else "unknown",
-                "path": existing_path,
-                "status": "success"
-            }, probe_video_id, probe_title, probe_duration
+        
+        # Check if video_id directory exists and contains video files
+        video_dir = os.path.join(var_root, probe_video_id)
+        if os.path.isdir(video_dir):
+            # Look for video files in the directory
+            video_extensions = ('.mp4', '.webm', '.mkv', '.avi', '.mov', '.flv', '.m4v')
+            for file in os.listdir(video_dir):
+                if file.lower().endswith(video_extensions):
+                    existing_path = os.path.join(video_dir, file)
+                    return {
+                        "url": video_url,
+                        "video_id": probe_video_id,
+                        "video_uuid": "",
+                        "title": probe_title,
+                        "duration": f"{probe_duration}s" if probe_duration else "unknown",
+                        "path": existing_path,
+                        "status": "success"
+                    }, probe_video_id, probe_title, probe_duration
+        
         return None, probe_video_id, probe_title, probe_duration
 
     def _update_video_ids_map(self, var_root: str, video_id: str, video_uuid: str, channel_name: str, title: str) -> None:
