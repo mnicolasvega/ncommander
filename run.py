@@ -38,7 +38,7 @@ def main() -> None:
             'task': LocalLLM(),
             'parameters': {
                 'prompt': LLM_PROMPT,
-                'model_path': LLM_MODEL_NAME,
+                'model_name': LLM_MODEL_NAME,
             },
             'order': 1
         },

@@ -17,4 +17,7 @@
     overflow-x: auto;
     margin: 5px 0;
     font-size: 0.9rem;
+    max-width: 90%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }

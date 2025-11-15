@@ -1,72 +1,26 @@
 from task.BaseTask import BaseTask
 from typing import Any, Dict
 import html
-import json
 import os
 import urllib.request
 
 class LocalLLM(BaseTask):
-    DEFAULT_MODEL_URL = "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
-    DEFAULT_MODEL_NAME = "mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+    DEFAULT_MODEL_URL = "https://huggingface.co/TheBloke/TinyLLaMA-1.1b-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+    DEFAULT_MODEL_NAME = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
-        self._print("LocalLLM task started")
         prompt = str(carry.get('prompt', '')).strip()
         if not prompt:
             return {"error": "prompt is required"}
-        
-        model_path = str(carry.get('model_path', '')).strip()
-        self._print(f"Input model_path: '{model_path}'")
-        
-        if not model_path:
-            self._print("No model_path provided, using default model")
-            model_path = self._get_or_download_default_model()
-            if model_path.startswith('ERROR:'):
-                return {"prompt": prompt, "error": model_path}
-        else:
-            # Resolve model name to model/ directory
-            self._print(f"Resolving model name: '{model_path}'")
-            model_path = self._resolve_model_path(model_path)
-            if model_path.startswith('ERROR:'):
-                return {"prompt": prompt, "error": model_path}
-        
-        self._print(f"Resolved model_path: {model_path}")
+        model_name = str(carry.get('model_name', self.DEFAULT_MODEL_NAME))
+        model_path = self._get_model_path(model_name)
+        if model_path.startswith('ERROR:'):
+            return {"prompt": prompt, "error": model_path}
         container_model_path = self._container_model_path(model_path, carry)
-        self._print(f"Container model path: {container_model_path}")
-        
-        try:
-            from llama_cpp import Llama
-        except Exception as e:
-            return {"prompt": prompt, "error": f"failed to import llama_cpp: {e}"}
-        
-        try:
-            n_ctx = int(carry.get('n_ctx', 2048))
-            n_gpu_layers = int(carry.get('n_gpu_layers', 0))
-            max_tokens = int(carry.get('max_tokens', 256))
-            temperature = float(carry.get('temperature', 0.2))
-            top_p = float(carry.get('top_p', 0.95))
-            
-            self._print(f"Loading model with n_ctx={n_ctx}, n_gpu_layers={n_gpu_layers}")
-            llm = Llama(
-                model_path=container_model_path,
-                n_ctx=n_ctx,
-                n_gpu_layers=n_gpu_layers,
-                verbose=False,
-            )
-            
-            self._print(f"Generating completion (max_tokens={max_tokens}, temp={temperature})")
-            result = llm.create_completion(
-                prompt=prompt,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-            )
-            text = result.get('choices', [{}])[0].get('text', '').strip()
-            self._print(f"Generation complete, response length: {len(text)} chars")
-            return {"prompt": prompt, "response": text}
-        except Exception as e:
-            self._print(f"Error during model execution: {e}")
-            return {"prompt": prompt, "error": str(e)}
+        result = self._evaluate_prompt(prompt, container_model_path, carry)
+        if 'error' in result:
+            return result
+        return {"prompt": prompt, "response": result['response']}
 
     def text_output(self, data: Dict[str, Any]) -> str:
         if 'error' in data:
@@ -91,6 +45,14 @@ class LocalLLM(BaseTask):
 
     def interval(self) -> int:
         return 300
+
+    def _get_model_path(self, model_name: str) -> str:
+        """Get model path: use provided name, or download default if not provided."""
+        if model_name:
+            model_name = str(model_name).strip()
+            return self._resolve_model_path(model_name)
+        else:
+            return self._get_or_download_default_model()
 
     def dependencies(self) -> Dict[str, Any]:
         return {
@@ -136,6 +98,41 @@ class LocalLLM(BaseTask):
     def max_time_expected(self) -> float | None:
         return None
 
+    def _evaluate_prompt(self, prompt: str, llm_model_path: str, carry: Dict[str, Any]) -> Dict[str, Any]:
+        """Load model and generate completion for prompt."""
+        try:
+            max_tokens = int(carry.get('max_tokens', 256))
+            temperature = float(carry.get('temperature', 0.2))
+            top_p = float(carry.get('top_p', 0.95))
+            llm = self._get_model(llm_model_path, carry)
+            formatted_prompt = f"{prompt}\n\nAnswer:"
+            self._print(f"Executing: {prompt}")
+            result = llm.create_completion(
+                prompt=formatted_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+            )
+            text = result.get('choices', [{}])[0].get('text', '').strip()
+            self._print(f"Answer: {text}")
+            return {"response": text}
+        except Exception as e:
+            self._print(f"Error: {e}")
+            return {"error": str(e)}
+
+    def _get_model(self, llm_model_path: str, carry: Dict[str, Any]):
+        """Load and initialize the LLM model."""
+        from llama_cpp import Llama
+        n_ctx = int(carry.get('n_ctx', 2048))
+        n_gpu_layers = int(carry.get('n_gpu_layers', 0))
+        self._print(f"Model loaded: {llm_model_path}")
+        return Llama(
+            model_path = llm_model_path,
+            n_ctx = n_ctx,
+            n_gpu_layers = n_gpu_layers,
+            verbose = False,
+        )
+
     def _container_model_path(self, model_path: str, params: Dict[str, Any]) -> str:
         if str(model_path).startswith('/app/'):
             return model_path
@@ -152,29 +149,22 @@ class LocalLLM(BaseTask):
         models_dir = os.path.join(commander_dir, 'model')
         model_path = os.path.join(models_dir, self.DEFAULT_MODEL_NAME)
         if os.path.exists(model_path):
-            self._print(f"Using cached model: {model_path}")
             return model_path
         os.makedirs(models_dir, exist_ok=True)
-        self._print(f"Downloading default model ({self.DEFAULT_MODEL_NAME})...")
-        self._print(f"This may take several minutes (~4.4GB)")
         try:
             urllib.request.urlretrieve(
                 self.DEFAULT_MODEL_URL,
                 model_path,
                 reporthook=self._download_progress
             )
-            self._print(f"Model downloaded successfully to: {model_path}")
+            self._print(f"Model downloaded: {model_path}")
             return model_path
         except Exception as e:
             return f"ERROR: Failed to download model: {str(e)}"
 
     def _download_progress(self, block_num: int, block_size: int, total_size: int) -> None:
-        """Report download progress."""
-        downloaded = block_num * block_size
-        if total_size > 0:
-            percent = min(100, (downloaded / total_size) * 100)
-            if block_num % 100 == 0:
-                self._print(f"Download progress: {percent:.1f}% ({downloaded // (1024*1024)}MB / {total_size // (1024*1024)}MB)")
+        """Report download progress (silent)."""
+        pass
 
     def _resolve_model_path(self, model_path: str) -> str:
         """Resolve model path. If not absolute, treat as model name in model/ dir."""
@@ -192,14 +182,12 @@ class LocalLLM(BaseTask):
         # Try the name as-is first
         model_file_path = os.path.join(models_dir, model_path)
         if os.path.exists(model_file_path):
-            self._print(f"Found model in model/ directory: {model_path}")
             return model_file_path
         
         # Try adding .gguf extension if not present
         if not model_path.endswith('.gguf'):
             model_file_path_with_ext = os.path.join(models_dir, f"{model_path}.gguf")
             if os.path.exists(model_file_path_with_ext):
-                self._print(f"Found model in model/ directory: {model_path}.gguf")
                 return model_file_path_with_ext
         
         return f"ERROR: Model '{model_path}' not found in model/ directory. Available models: {self._list_models(models_dir)}"
