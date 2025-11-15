@@ -131,10 +131,10 @@ class LlamaVideoSummary(BaseTask):
         return 60 * 60
 
     def cpus(self) -> float:
-        return 10.0
+        return 20.0
 
     def memory_gb(self) -> float:
-        return 10.0
+        return 20.0
 
     def dependencies(self) -> Dict[str, Any]:
         return {
@@ -203,23 +203,7 @@ class LlamaVideoSummary(BaseTask):
             prompt_template = f.read()
         
         prompt = prompt_template.format(context=context, json_content=json_str)
-        self._print(f"Prompt length: {len(prompt)} chars")
-        max_tokens = int(carry.get('max_tokens', 2048))
-        temperature = float(carry.get('temperature', 0.2))
-        top_p = float(carry.get('top_p', 0.95))
-        
-        self._print(f"LLM params: max_tokens={max_tokens}, temperature={temperature}, top_p={top_p}")
-        # Don't use PromptService here as it adds generic instructions that conflict with JSON output
-        self._print(f"Sending prompt directly (length: {len(prompt)} chars)")
-        result = llm.create_completion(
-            prompt=prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-        )
-        response_text = result.get('choices', [{}])[0].get('text', '').strip()
-        self._print(f"LLM Response length: {len(response_text)} chars")
-        self._print(f"LLM Response preview (first 500 chars): {response_text[:500]}")
+        response_text = self._get_llm_response(prompt, llm, carry)
         try:
             # Remove markdown code blocks if present
             cleaned_response = response_text
@@ -238,6 +222,24 @@ class LlamaVideoSummary(BaseTask):
             self._print(f"Failed text (first 1000 chars): {response_text[:1000]}")
             self._print(f"Failed text (last 500 chars): {response_text[-500:]}")
             return json_data
+
+    def _get_llm_response(self, prompt: str, llm, carry: Dict[str, Any]) -> str:
+        self._print(f"Prompt length: {len(prompt)} chars")
+        max_tokens = int(carry.get('max_tokens', 2048))
+        temperature = float(carry.get('temperature', 0.2))
+        top_p = float(carry.get('top_p', 0.95))
+        self._print(f"LLM params: max_tokens={max_tokens}, temperature={temperature}, top_p={top_p}")
+        self._print(f"Sending prompt directly (length: {len(prompt)} chars)")
+        result = llm.create_completion(
+            prompt=prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        response_text = result.get('choices', [{}])[0].get('text', '').strip()
+        self._print(f"LLM Response length: {len(response_text)} chars")
+        self._print(f"LLM Response preview (first 500 chars): {response_text[:500]}")
+        return response_text
 
     def _save_json(self, json_path: str, data: Dict[str, str]) -> None:
         """Save corrected JSON content to file."""
