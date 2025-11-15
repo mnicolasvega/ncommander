@@ -60,7 +60,7 @@ def main() -> None:
                     'https://www.youtube.com/watch?v=1WFhPFDRbWU',
                 ]
             },
-            'order': 1
+            'order': 2
         },
         {
             'task': WhisperSubtitleTask(),

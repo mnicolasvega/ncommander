@@ -1,11 +1,11 @@
 [
   {
-    "name": "youtube_downloader",
+    "name": "whisper_subtitles",
     "order": 1
   },
   {
-    "name": "whisper_subtitles",
-    "order": 1
+    "name": "youtube_downloader",
+    "order": 2
   },
   {
     "name": "random_messager",
