@@ -1,5 +1,6 @@
 tmp/
 venv/
+model/
 
 .env
 TODO.md

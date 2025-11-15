@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from task.DirManager import DirManager
 from task.DirObserver import DirObserver
 from task.FlaskTask import FlaskTask
+from task.LocalLLM import LocalLLM
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
 from task.TaskData import TaskData
@@ -16,6 +17,8 @@ PATH_DIR_OBSERVER = os.getenv("PATH_DIR_OBSERVER")
 YOUTUBE_CHANNEL = os.getenv("YOUTUBE_CHANNEL")
 YOUTUBE_CHANNELS = os.getenv("YOUTUBE_CHANNELS").split(",")
 YOUTUBE_CHANNELS_JSON = json.loads(os.getenv("YOUTUBE_CHANNELS_JSON"))
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "")
+LLM_PROMPT = os.getenv("LLM_PROMPT", "Explain what a Docker container is in one sentence.")
 ROOT = '/app/tmp'
 DEBUG = True
 
@@ -31,6 +34,14 @@ def main() -> None:
             'parameters': {'port': 7000},
             'order': 3
         },
+        {
+            'task': LocalLLM(),
+            'parameters': {
+                'prompt': LLM_PROMPT,
+                'model_path': LLM_MODEL_NAME,
+            },
+            'order': 1
+        },
         #{
         #    'task': YouTubeScannerTask(),
         #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
@@ -41,26 +52,26 @@ def main() -> None:
         #    'parameters': {},
         #    'order': 2
         #},
-        {
-            'task': DirObserver(),
-            'parameters': {
-                'paths': [
-                    f"{ROOT}/output",
-                    PATH_DIR_OBSERVER,
-                ],
-            },
-            'order': 3
-        },
-        {
-            'task': SystemMonitor(),
-            'parameters': {},
-            'order': 2
-        },
-        {
-            'task': TaskData(),
-            'parameters': {},
-            'order': 1
-        },
+        #{
+        #    'task': DirObserver(),
+        #    'parameters': {
+        #        'paths': [
+        #            f"{ROOT}/output",
+        #            PATH_DIR_OBSERVER,
+        #        ],
+        #    },
+        #    'order': 3
+        #},
+        #{
+        #    'task': SystemMonitor(),
+        #    'parameters': {},
+        #    'order': 2
+        #},
+        #{
+        #    'task': TaskData(),
+        #    'parameters': {},
+        #    'order': 1
+        #},
         #{
         #    'task': DirManager(),
         #    'parameters': {},
