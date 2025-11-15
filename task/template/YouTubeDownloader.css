@@ -1,0 +1,55 @@
+.youtube-downloader-container {
+    margin: 10px 0;
+}
+
+.youtube-downloader-card {
+    border: 1px solid #4caf50;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.youtube-downloader-card.youtube-downloader-error {
+    border: 1px solid #f44336;
+}
+
+.youtube-downloader-section {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.youtube-downloader-label {
+    font-weight: bold;
+    color: #555;
+}
+
+.youtube-downloader-error-card {
+    border: 1px solid #f44336;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.youtube-downloader-error-message {
+    color: #aa0000;
+    margin: 5px 0;
+}
+
+.youtube-downloader-card a {
+    color: #1976d2;
+    text-decoration: none;
+}
+
+.youtube-downloader-card a:hover {
+    text-decoration: underline;
+}
+
+.youtube-downloader-card code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85rem;
+}

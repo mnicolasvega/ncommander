@@ -7,6 +7,7 @@ from task.Message import Message
 from task.SystemMonitor import SystemMonitor
 from task.TaskData import TaskData
 from task.UI import UI
+from task.YouTubeDownloader import YouTubeDownloader
 from task.YouTubeScannerTask import YouTubeScannerTask
 from TaskCommander import TaskCommander
 import json
@@ -33,28 +34,38 @@ def main() -> None:
             'parameters': {'port': 7000},
             'order': 101
         },
-        {
-            'task': LlamaLLM(),
-            'parameters': {
-                'prompts': [
-                    "What is a black hole?",
-                    "What is a white hole?",
-                    "What is a wormhole?",
-                ],
-                'model_name': LLM_MODEL_NAME,
-            },
-            'order': 1
-        },
+        #{
+        #    'task': LlamaLLM(),
+        #    'parameters': {
+        #        'prompts': [
+        #            "What is a black hole?",
+        #            "What is a white hole?",
+        #            "What is a wormhole?",
+        #        ],
+        #        'model_name': LLM_MODEL_NAME,
+        #    },
+        #    'order': 1
+        #},
         #{
         #    'task': YouTubeScannerTask(),
         #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
         #    'order': 1
         #},
         {
-            'task': Message(),
-            'parameters': {},
-            'order': 2
+            'task': YouTubeDownloader(),
+            'parameters': {
+                'video_urls': [
+                    'https://www.youtube.com/watch?v=3QlHvz_N8m8',
+                    'https://www.youtube.com/watch?v=1WFhPFDRbWU',
+                ]
+            },
+            'order': 1
         },
+        #{
+        #    'task': Message(),
+        #    'parameters': {},
+        #    'order': 2
+        #},
         #{
         #    'task': DirObserver(),
         #    'parameters': {
@@ -65,11 +76,11 @@ def main() -> None:
         #    },
         #    'order': 3
         #},
-        {
-            'task': SystemMonitor(),
-            'parameters': {},
-            'order': 100
-        },
+        #{
+        #    'task': SystemMonitor(),
+        #    'parameters': {},
+        #    'order': 100
+        #},
         #{
         #    'task': TaskData(),
         #    'parameters': {},

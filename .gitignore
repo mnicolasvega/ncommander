@@ -1,6 +1,7 @@
-tmp/
 venv/
-model/
+tmp/
+lib/
+var/
 
 .env
 TODO.md
