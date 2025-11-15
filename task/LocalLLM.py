@@ -1,4 +1,5 @@
 from task.BaseTask import BaseTask
+from task.exception import LocalLLMError
 from typing import Any, Dict
 import html
 import os
@@ -9,18 +10,20 @@ class LocalLLM(BaseTask):
     DEFAULT_MODEL_NAME = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
-        prompt = str(carry.get('prompt', '')).strip()
-        if not prompt:
-            return {"error": "prompt is required"}
-        model_name = str(carry.get('model_name', self.DEFAULT_MODEL_NAME))
-        model_path = self._get_model_path(model_name)
-        if model_path.startswith('ERROR:'):
-            return {"prompt": prompt, "error": model_path}
-        container_model_path = self._container_model_path(model_path, carry)
-        result = self._evaluate_prompt(prompt, container_model_path, carry)
-        if 'error' in result:
-            return result
-        return {"prompt": prompt, "response": result['response']}
+        try:
+            prompt = str(carry.get('prompt', '')).strip()
+            if not prompt:
+                raise LocalLLMError("prompt is required")
+            model_name = str(carry.get('model_name', self.DEFAULT_MODEL_NAME))
+            model_path = self._get_model_path(model_name)
+            container_model_path = self._container_model_path(model_path, carry)
+            response = self._evaluate_prompt(prompt, container_model_path, carry)
+            return {"prompt": prompt, "response": response}
+        except LocalLLMError as e:
+            return {"prompt": carry.get('prompt', ''), "error": str(e)}
+        except Exception as e:
+            self._print(f"Error: {e}")
+            return {"prompt": carry.get('prompt', ''), "error": str(e)}
 
     def text_output(self, data: Dict[str, Any]) -> str:
         if 'error' in data:
@@ -76,17 +79,6 @@ class LocalLLM(BaseTask):
                 "mode": "rw",
             }
         }
-        model_path = params.get('model_path', '')
-        if model_path and not str(model_path).startswith('/app/'):
-            if 'model/' not in str(model_path) and '/model/' not in str(model_path):
-                # Only mount if model_path is an absolute path
-                # Docker requires absolute paths for host volume mounts
-                if os.path.isabs(model_path):
-                    container_path = f"/mnt/llm/{os.path.basename(model_path)}"
-                    volumes[model_path] = {
-                        "bind": container_path,
-                        "mode": "ro",
-                    }
         return volumes
 
     def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
@@ -98,27 +90,31 @@ class LocalLLM(BaseTask):
     def max_time_expected(self) -> float | None:
         return None
 
-    def _evaluate_prompt(self, prompt: str, llm_model_path: str, carry: Dict[str, Any]) -> Dict[str, Any]:
+    def _evaluate_prompt(self, prompt: str, llm_model_path: str, carry: Dict[str, Any]) -> str:
         """Load model and generate completion for prompt."""
-        try:
-            max_tokens = int(carry.get('max_tokens', 256))
-            temperature = float(carry.get('temperature', 0.2))
-            top_p = float(carry.get('top_p', 0.95))
-            llm = self._get_model(llm_model_path, carry)
-            formatted_prompt = f"{prompt}\n\nAnswer:"
-            self._print(f"Executing: {prompt}")
-            result = llm.create_completion(
-                prompt=formatted_prompt,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-            )
-            text = result.get('choices', [{}])[0].get('text', '').strip()
-            self._print(f"Answer: {text}")
-            return {"response": text}
-        except Exception as e:
-            self._print(f"Error: {e}")
-            return {"error": str(e)}
+        max_tokens = int(carry.get('max_tokens', 256))
+        temperature = float(carry.get('temperature', 0.2))
+        top_p = float(carry.get('top_p', 0.95))
+        llm = self._get_model(llm_model_path, carry)
+        formatted_prompt = self._get_formatted_prompt(prompt)
+        self._print(f"Executing: {prompt}")
+        result = llm.create_completion(
+            prompt = formatted_prompt,
+            max_tokens = max_tokens,
+            temperature = temperature,
+            top_p = top_p,
+        )
+        text = result.get('choices', [{}])[0].get('text', '').strip()
+        self._print(f"Answer: {text}")
+        return text
+
+    def _get_formatted_prompt(self, prompt: str) -> str:
+        """Format prompt with instructions to guide the LLM."""
+        instructions = (
+            "Provide a clear, informative answer with medium length "
+            "(2-3 sentences, not too brief and not too verbose)."
+        )
+        return f"{prompt}\n\nInstructions: {instructions}\n\nAnswer:"
 
     def _get_model(self, llm_model_path: str, carry: Dict[str, Any]):
         """Load and initialize the LLM model."""
@@ -160,43 +156,35 @@ class LocalLLM(BaseTask):
             self._print(f"Model downloaded: {model_path}")
             return model_path
         except Exception as e:
-            return f"ERROR: Failed to download model: {str(e)}"
+            raise LocalLLMError(f"Failed to download model: {str(e)}")
 
     def _download_progress(self, block_num: int, block_size: int, total_size: int) -> None:
         """Report download progress (silent)."""
         pass
 
     def _resolve_model_path(self, model_path: str) -> str:
-        """Resolve model path. If not absolute, treat as model name in model/ dir."""
-        # If already absolute path, return as-is if it exists
-        if os.path.isabs(model_path):
-            if os.path.exists(model_path):
-                return model_path
-            return f"ERROR: Model file not found at {model_path}"
-        
-        # Treat as model name and look in model/ directory
-        task_dir = os.path.dirname(os.path.abspath(__file__))
-        commander_dir = os.path.dirname(task_dir)
-        models_dir = os.path.join(commander_dir, 'model')
-        
-        # Try the name as-is first
-        model_file_path = os.path.join(models_dir, model_path)
+        dir_task = os.path.dirname(os.path.abspath(__file__))
+        dir_commander = os.path.dirname(dir_task)
+        dir_models = os.path.join(dir_commander, 'model')
+        model_file_path = os.path.join(dir_models, model_path)
         if os.path.exists(model_file_path):
             return model_file_path
-        
-        # Try adding .gguf extension if not present
         if not model_path.endswith('.gguf'):
-            model_file_path_with_ext = os.path.join(models_dir, f"{model_path}.gguf")
+            model_file_path_with_ext = os.path.join(dir_models, f"{model_path}.gguf")
             if os.path.exists(model_file_path_with_ext):
                 return model_file_path_with_ext
-        
-        return f"ERROR: Model '{model_path}' not found in model/ directory. Available models: {self._list_models(models_dir)}"
-    
-    def _list_models(self, models_dir: str) -> str:
-        """List available models in the models directory."""
+        try:
+            available = self._list_models(dir_models)
+            models_str = ", ".join(available)
+        except LocalLLMError:
+            models_str = "(no models available)"
+        raise LocalLLMError(f"Model '{model_path}' not found in model/ directory. Available models: {models_str}")
+
+    def _list_models(self, models_dir: str) -> list[str]:
+        """List available .gguf models in the models directory."""
         if not os.path.exists(models_dir):
-            return "(directory does not exist)"
+            raise LocalLLMError(f"Models directory does not exist: {models_dir}")
         models = [f for f in os.listdir(models_dir) if f.endswith('.gguf')]
         if not models:
-            return "(no .gguf files found)"
-        return ", ".join(models)
+            raise LocalLLMError(f"No .gguf models found in {models_dir}")
+        return models

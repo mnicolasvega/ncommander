@@ -18,7 +18,6 @@ YOUTUBE_CHANNEL = os.getenv("YOUTUBE_CHANNEL")
 YOUTUBE_CHANNELS = os.getenv("YOUTUBE_CHANNELS").split(",")
 YOUTUBE_CHANNELS_JSON = json.loads(os.getenv("YOUTUBE_CHANNELS_JSON"))
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "")
-LLM_PROMPT = os.getenv("LLM_PROMPT", "Explain what a Docker container is in one sentence.")
 ROOT = '/app/tmp'
 DEBUG = True
 
@@ -37,7 +36,7 @@ def main() -> None:
         {
             'task': LocalLLM(),
             'parameters': {
-                'prompt': LLM_PROMPT,
+                'prompt': "How big is a black hole?",
                 'model_name': LLM_MODEL_NAME,
             },
             'order': 1
