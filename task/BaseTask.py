@@ -13,12 +13,6 @@ class BaseTask(TaskInterface):
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 
-    def requires_connection(self) -> bool:
-        return False
-
-    def max_time_expected(self) -> float | None:
-        return None
-
     def dependencies(self) -> Dict[str, Any]:
         return {}
 
@@ -27,6 +21,18 @@ class BaseTask(TaskInterface):
 
     def ports(self, params: Dict[str, Any]) -> Dict[int, int]:
         return {}
+
+    def cpus(self) -> float:
+        return 1.0
+
+    def memory_gb(self) -> float:
+        return 1.0
+
+    def requires_connection(self) -> bool:
+        return False
+
+    def max_time_expected(self) -> float | None:
+        return None
 
     def text_output(self, data: Dict[str, Any]) -> str:
         return json.dumps(data)

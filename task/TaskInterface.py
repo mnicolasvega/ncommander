@@ -66,6 +66,20 @@ class TaskInterface(ABC):
         pass
 
     @abstractmethod
+    def cpus(self) -> float:
+        """
+        Return the number of CPU cores required by the task.
+        """
+        pass
+
+    @abstractmethod
+    def memory_gb(self) -> float:
+        """
+        Return the amount of memory in GB required by the task.
+        """
+        pass
+
+    @abstractmethod
     def requires_connection(self) -> bool:
         """
         Return true if the task requires an active internet connection.

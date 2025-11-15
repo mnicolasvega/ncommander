@@ -162,8 +162,8 @@ class TaskCommander:
             volumes = self.container_builder.get_volumes(commander_dir, task, params),
             ports = task_ports,
             environment = {"PARAMS": json.dumps(params)},
-            mem_limit = self.container_builder.get_memory(1),
-            nano_cpus = self.container_builder.get_cpus(1),
+            mem_limit = self.container_builder.get_memory(task.memory_gb()),
+            nano_cpus = self.container_builder.get_cpus(task.cpus()),
             network_mode = self.container_builder.get_network_mode(task)
         )
         return container
