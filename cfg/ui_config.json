@@ -1,0 +1,14 @@
+[
+  {
+    "name": "random_messager",
+    "order": 2
+  },
+  {
+    "name": "system_monitor",
+    "order": 100
+  },
+  {
+    "name": "ncommander_ui",
+    "order": 101
+  }
+]

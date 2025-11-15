@@ -1,10 +1,10 @@
-from task.TaskInterface import TaskInterface
-from typing import Any, Dict, Tuple
 import argparse
 import importlib
 import json
 import os
 import time
+from task.TaskInterface import TaskInterface
+from typing import Any, Dict, Tuple
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -57,8 +57,14 @@ class TaskLauncher:
 
     def _write_container_logs(self, output_path: str, result: Dict[str, Any]) -> None:
         json_str = json.dumps(result, ensure_ascii=False)
-        with open(f"{output_path}/output container.log", "a", encoding="utf-8") as f:
-            f.write("%s: %s\n" % (self._task.name(), json_str))
+        commander_dir = os.path.dirname(os.path.abspath(__file__))
+        task_name = self._task.name()
+        timestamp_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        logs_dir = os.path.join(commander_dir, "log", task_name)
+        os.makedirs(logs_dir, exist_ok=True)
+        log_path = os.path.join(logs_dir, f"{timestamp_str}.log")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write(json_str + "\n")
 
     def _write_task_output(self, output_path: str, text_output: str) -> None:
         with open(f"{output_path}/output text.txt", "a", encoding="utf-8") as f:

@@ -245,12 +245,13 @@ class TaskCommander:
     def _save_tasks_config(self, tasks: List[dict]) -> None:
         """Save tasks configuration to a JSON file for UI server."""
         commander_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = f"{commander_dir}/tmp/ui_config.json"
+        config_path = f"{commander_dir}/cfg/ui_config.json"
         tasks_config = [{
             'name': task_dict['task'].name(),
             'order': task_dict['order']
         } for task_dict in tasks]
         tasks_config = sorted(tasks_config, key=lambda x: x['order'])
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
         with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(tasks_config, f, indent=2)
 

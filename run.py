@@ -62,18 +62,18 @@ def main() -> None:
         #    },
         #    'order': 1
         #},
-        {
-            'task': WhisperSubtitleTask(),
-            'parameters': {
-                'dir_path': '/app/var/youtube_downloader',
-            },
-            'order': 1
-        },
         #{
-        #    'task': Message(),
-        #    'parameters': {},
-        #    'order': 2
+        #    'task': WhisperSubtitleTask(),
+        #    'parameters': {
+        #        'dir_path': '/app/var/youtube_downloader',
+        #    },
+        #    'order': 1
         #},
+        {
+            'task': Message(),
+            'parameters': {},
+            'order': 2
+        },
         #{
         #    'task': DirObserver(),
         #    'parameters': {
@@ -84,11 +84,11 @@ def main() -> None:
         #    },
         #    'order': 3
         #},
-        #{
-        #    'task': SystemMonitor(),
-        #    'parameters': {},
-        #    'order': 100
-        #},
+        {
+            'task': SystemMonitor(),
+            'parameters': {},
+            'order': 100
+        },
         #{
         #    'task': TaskData(),
         #    'parameters': {},
