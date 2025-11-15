@@ -9,6 +9,7 @@ from task.TaskData import TaskData
 from task.UI import UI
 from task.YouTubeDownloader import YouTubeDownloader
 from task.YouTubeScannerTask import YouTubeScannerTask
+from task.WhisperSubtitleTask import WhisperSubtitleTask
 from TaskCommander import TaskCommander
 import json
 import os
@@ -51,13 +52,20 @@ def main() -> None:
         #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
         #    'order': 1
         #},
+        #{
+        #    'task': YouTubeDownloader(),
+        #    'parameters': {
+        #        'video_urls': [
+        #            'https://www.youtube.com/watch?v=3QlHvz_N8m8',
+        #            'https://www.youtube.com/watch?v=1WFhPFDRbWU',
+        #        ]
+        #    },
+        #    'order': 1
+        #},
         {
-            'task': YouTubeDownloader(),
+            'task': WhisperSubtitleTask(),
             'parameters': {
-                'video_urls': [
-                    'https://www.youtube.com/watch?v=3QlHvz_N8m8',
-                    'https://www.youtube.com/watch?v=1WFhPFDRbWU',
-                ]
+                'dir_path': '/app/var/youtube_downloader',
             },
             'order': 1
         },
