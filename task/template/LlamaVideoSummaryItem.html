@@ -1,18 +1,36 @@
-<div class="llama-video-summary-item">
-    <div class="task-result-section">
-        <span class="task-result-label">📄 File:</span>
-        <span class="task-result-value">{file_name}</span>
-    </div>
-    <div class="task-result-section">
-        <span class="task-result-label">📊 Status:</span>
-        <span class="task-result-value">{status}</span>
-    </div>
-    <div class="task-result-section">
-        <span class="task-result-label">✨ Corrected JSON:</span>
-        <span class="task-result-value">{parsed_json_path}</span>
-    </div>
-    <div class="task-result-section">
-        <span class="task-result-label">⚠️ Error:</span>
-        <span class="task-result-value">{error}</span>
-    </div>
+<div class="llama-video-summary-card task-result-card">
+    <table class="task-result-table">
+        <tbody>
+            <tr>
+                <td class="task-result-label">📄 File:</td>
+                <td><code>{file_name}</code></td>
+            </tr>
+            <tr>
+                <td class="task-result-label">📊 Status:</td>
+                <td>{status}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label">✨ Corrected JSON:</td>
+                <td><code>{parsed_json_path}</code></td>
+            </tr>
+            <tr>
+                <td class="task-result-label">⚠️ Error:</td>
+                <td>{error}</td>
+            </tr>
+            <tr>
+                <td class="task-result-label" colspan="2">💬 Parsed Content:</td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="task-result-table subtitle-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Text</th>
+            </tr>
+        </thead>
+        <tbody>
+            {parsed_json_content}
+        </tbody>
+    </table>
 </div>

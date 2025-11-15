@@ -44,15 +44,15 @@ class ModelFactory:
     def _load_model(self, llm_model_path: str, carry: Dict[str, Any]):
         """Load and initialize the LLM model."""
         from llama_cpp import Llama
-        n_ctx = int(carry.get('n_ctx', 2048))
+        max_context_tokens = int(carry.get('max_context_tokens', 2048))
         n_gpu_layers = int(carry.get('n_gpu_layers', 0))
         self._print(f"Loading model: {llm_model_path}")
         try:
             llm = Llama(
-                model_path=llm_model_path,
-                n_ctx=n_ctx,
-                n_gpu_layers=n_gpu_layers,
-                verbose=True,
+                model_path = llm_model_path,
+                n_ctx = max_context_tokens,
+                n_gpu_layers = n_gpu_layers,
+                verbose = True,
             )
             self._print(f"Model loaded successfully: {llm_model_path}")
             return llm

@@ -35,11 +35,13 @@ class LlamaVideoSummary(BaseTask):
             for json_file in json_files:
                 try:
                     parsed_json_path = self._derive_parsed_json_path(json_file)
-                    csv_content = self._json_to_csv_string(json_file)
+                    # Load original JSON
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        original_json = json.load(f)
                     video_title = os.path.splitext(os.path.basename(json_file))[0]
                     self._print(f"Processing {os.path.basename(json_file)}...")
-                    corrected_csv = self._correct_with_llm(csv_content, video_title, llm, carry)
-                    corrected_json = self._csv_string_to_json(corrected_csv)
+                    # Correct text values while keeping timestamps
+                    corrected_json = self._correct_json_with_llm(original_json, video_title, llm, carry)
                     self._save_json(parsed_json_path, corrected_json)
                     processed += 1
                     results.append({
@@ -92,10 +94,25 @@ class LlamaVideoSummary(BaseTask):
         for result in results:
             file_name = os.path.basename(result.get('file', ''))
             status = result.get('status', 'unknown')
+            parsed_json_path = result.get('parsed_json_path', '')
+            # Read parsed JSON content if available
+            parsed_json_content = ''
+            if status == 'success' and parsed_json_path and os.path.exists(parsed_json_path):
+                try:
+                    with open(parsed_json_path, 'r', encoding='utf-8') as f:
+                        parsed_data = json.load(f)
+                    # Format as table rows
+                    rows = []
+                    for timestamp, text in sorted(parsed_data.items(), key=lambda x: int(x[0])):
+                        rows.append(f'<tr><td>{html.escape(timestamp)}</td><td>{html.escape(text)}</td></tr>')
+                    parsed_json_content = '\n'.join(rows)
+                except Exception:
+                    parsed_json_content = ''
             item_html = self._render_html_from_template('template/LlamaVideoSummaryItem.html', {
                 'file_name': html.escape(file_name),
                 'status': html.escape(status),
-                'parsed_json_path': html.escape(result.get('parsed_json_path', '')),
+                'parsed_json_path': html.escape(parsed_json_path),
+                'parsed_json_content': parsed_json_content,
                 'error': html.escape(result.get('error', ''))
             })
             items_html.append(item_html)
@@ -159,16 +176,13 @@ class LlamaVideoSummary(BaseTask):
         return None
 
     def _find_json_files(self, root_dir: str) -> List[str]:
-        """Find all JSON subtitle files that don't have an associated parsed JSON."""
+        """Find all JSON subtitle files."""
         json_files = []
         for current_root, _, files in os.walk(root_dir):
             for f in files:
                 if f.endswith('.json') and not f.endswith('parsed.json'):
                     json_path = os.path.join(current_root, f)
-                    parsed_json_path = self._derive_parsed_json_path(json_path)
-                    # Only include if parsed JSON doesn't exist
-                    if not os.path.exists(parsed_json_path):
-                        json_files.append(json_path)
+                    json_files.append(json_path)
         return sorted(json_files)
 
     def _derive_parsed_json_path(self, json_path: str) -> str:
@@ -176,62 +190,56 @@ class LlamaVideoSummary(BaseTask):
         base, _ = os.path.splitext(json_path)
         return f"{base} parsed.json"
 
-    def _json_to_csv_string(self, json_path: str) -> str:
-        """Convert JSON subtitle file to CSV string format for LLM prompt."""
-        with open(json_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+    def _correct_json_with_llm(self, json_data: Dict[str, str], context: str, llm, carry: Dict[str, Any]) -> Dict[str, str]:
+        """Use LLM to correct text values in the JSON dict."""
+        # Convert JSON to a format the LLM can process
+        json_str = json.dumps(json_data, ensure_ascii=False, indent=2)
+        self._print(f"Input JSON has {len(json_data)} entries, {len(json_str)} chars")
         
-        # Return CSV content as string for LLM prompt
-        csv_lines = ['timestamp,text']
-        for timestamp, text in sorted(data.items(), key=lambda x: int(x[0])):
-            # Escape quotes in text for CSV format
-            text_escaped = text.replace('"', '""')
-            csv_lines.append(f'{timestamp},"{text_escaped}"')
-        
-        return '\n'.join(csv_lines)
-
-    def _correct_with_llm(self, csv_content: str, context: str, llm, carry: Dict[str, Any]) -> str:
-        """Use LLM to correct the CSV content."""
-        # Load prompt template from file
+        # Load prompt template
         task_dir = os.path.dirname(os.path.abspath(__file__))
         prompt_path = os.path.join(task_dir, 'video_summary_correction.md')
-        
         with open(prompt_path, 'r', encoding='utf-8') as f:
             prompt_template = f.read()
         
-        prompt = prompt_template.format(context=context, csv_content=csv_content)
-
+        prompt = prompt_template.format(context=context, json_content=json_str)
+        self._print(f"Prompt length: {len(prompt)} chars")
         max_tokens = int(carry.get('max_tokens', 2048))
         temperature = float(carry.get('temperature', 0.2))
         top_p = float(carry.get('top_p', 0.95))
         
-        formatted_prompt = self._prompt_service.get_formatted_prompt(prompt)
-        
+        self._print(f"LLM params: max_tokens={max_tokens}, temperature={temperature}, top_p={top_p}")
+        # Don't use PromptService here as it adds generic instructions that conflict with JSON output
+        self._print(f"Sending prompt directly (length: {len(prompt)} chars)")
         result = llm.create_completion(
-            prompt=formatted_prompt,
+            prompt=prompt,
             max_tokens=max_tokens,
             temperature=temperature,
             top_p=top_p,
         )
-        
-        response = result.get('choices', [{}])[0].get('text', '').strip()
-        return response
+        response_text = result.get('choices', [{}])[0].get('text', '').strip()
+        self._print(f"LLM Response length: {len(response_text)} chars")
+        self._print(f"LLM Response preview (first 500 chars): {response_text[:500]}")
+        try:
+            # Remove markdown code blocks if present
+            cleaned_response = response_text
+            if response_text.startswith('```'):
+                self._print("Detected markdown code block, removing...")
+                lines = response_text.split('\n')
+                cleaned_response = '\n'.join(lines[1:-1]) if len(lines) > 2 else response_text
+                self._print(f"Cleaned response preview: {cleaned_response[:500]}")
+            corrected_json = json.loads(cleaned_response)
+            self._print(f"Successfully parsed JSON with {len(corrected_json)} entries")
+            return corrected_json
+        except json.JSONDecodeError as e:
+            # If parsing fails, return original
+            self._print(f"ERROR: Failed to parse LLM response as JSON")
+            self._print(f"JSON Error: {str(e)}")
+            self._print(f"Failed text (first 1000 chars): {response_text[:1000]}")
+            self._print(f"Failed text (last 500 chars): {response_text[-500:]}")
+            return json_data
 
-    def _csv_string_to_json(self, csv_content: str) -> Dict[int, str]:
-        """Convert CSV string back to JSON format."""
-        lines = csv_content.strip().split('\n')
-        result = {}
-        for line in lines[1:]:  # Skip header
-            if ',' in line:
-                parts = line.split(',', 1)
-                if len(parts) == 2:
-                    timestamp = parts[0].strip()
-                    text = parts[1].strip().strip('"')
-                    if timestamp.isdigit():
-                        result[int(timestamp)] = text
-        return result
-
-    def _save_json(self, json_path: str, data: Dict[int, str]) -> None:
+    def _save_json(self, json_path: str, data: Dict[str, str]) -> None:
         """Save corrected JSON content to file."""
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)

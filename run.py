@@ -21,6 +21,8 @@ YOUTUBE_CHANNEL = os.getenv("YOUTUBE_CHANNEL")
 YOUTUBE_CHANNELS = os.getenv("YOUTUBE_CHANNELS").split(",")
 YOUTUBE_CHANNELS_JSON = json.loads(os.getenv("YOUTUBE_CHANNELS_JSON"))
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "")
+LLM_MAX_TOKENS = 4096
+LLM_MAX_CONTEXT_TOKENS = LLM_MAX_TOKENS * 2
 ROOT = '/app/tmp'
 DEBUG = True
 
@@ -75,7 +77,8 @@ def main() -> None:
             'parameters': {
                 'dir_path': '/app/var/youtube_downloader',
                 'model_name': LLM_MODEL_NAME,
-                'max_tokens': 4096 * 2,
+                'max_context_tokens': LLM_MAX_CONTEXT_TOKENS,
+                'max_tokens': LLM_MAX_TOKENS,
                 'temperature': 0.2,
             },
             'order': 0
