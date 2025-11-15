@@ -107,7 +107,7 @@ class WhisperSubtitleTask(BaseTask):
             return self._render_html_from_template('template/YouTubeDownloaderError.html', {
                 'error_message': html.escape(str(data['error']))
             })
-        rows = []
+        items_html_parts: List[str] = []
         for item in data.get('files', []):
             path = html.escape(str(item.get('path', '')))
             status = html.escape(str(item.get('status', 'unknown')))
@@ -116,22 +116,36 @@ class WhisperSubtitleTask(BaseTask):
             lang = html.escape(str(item.get('language', '')))
             segs = html.escape(str(item.get('segments', '')))
             secs = html.escape(str(item.get('seconds', '')))
-            rows.append(f"<tr><td>{path}</td><td>{status}</td><td>{srt}</td><td>{lang}</td><td>{segs}</td><td>{secs}</td><td>{err}</td></tr>")
-        table = "\n".join([
-            "<table border=1 cellpadding=4 cellspacing=0>",
-            "<thead><tr><th>file</th><th>status</th><th>srt</th><th>lang</th><th>segments</th><th>seconds</th><th>error</th></tr></thead>",
-            "<tbody>",
-            *rows,
-            "</tbody></table>"
-        ])
-        header = f"<p>dir: {html.escape(str(data.get('dir_path', '')))} | model: {html.escape(str(data.get('model', '')))} | processed: {data.get('processed', 0)} | skipped: {data.get('skipped', 0)} | failed: {data.get('failed', 0)}</p>"
-        return header + table
+            items_html_parts.append(self._render_html_from_template('template/WhisperSubtitleItem.html', {
+                'path': path,
+                'status': status,
+                'srt': srt,
+                'language': lang,
+                'segments': segs,
+                'seconds': secs,
+                'error': err,
+            }))
+        items_html = "\n".join(items_html_parts)
+        return self._render_html_from_template('template/WhisperSubtitleList.html', {
+            'dir_path': html.escape(str(data.get('dir_path', ''))),
+            'model': html.escape(str(data.get('model', ''))),
+            'processed': str(data.get('processed', 0)),
+            'skipped': str(data.get('skipped', 0)),
+            'failed': str(data.get('failed', 0)),
+            'items': items_html,
+        })
 
     def interval(self) -> int:
         return 60 * 60
 
     def name(self) -> str:
         return "whisper_subtitles"
+
+    def cpus(self) -> float:
+        return 10.0
+
+    def memory_gb(self) -> float:
+        return 10.0
 
     def dependencies(self) -> Dict[str, Any]:
         return {
