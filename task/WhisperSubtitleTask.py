@@ -99,16 +99,7 @@ class WhisperSubtitleTask(BaseTask):
         items_html_parts: List[str] = []
         for idx, item in enumerate(files, start=1):
             path = html.escape(str(item.get('path', '')))
-            status_raw = str(item.get('status', 'unknown'))
-            # Add emoji based on status
-            if status_raw == 'success':
-                status = '💾 ' + html.escape(status_raw)
-            elif status_raw == 'skipped':
-                status = '✅ ⏩ ' + html.escape(status_raw)
-            elif status_raw == 'error':
-                status = '❌ ' + html.escape(status_raw)
-            else:
-                status = html.escape(status_raw)
+            status = self._get_formatted_status(str(item.get('status', 'unknown')))
             srt = html.escape(str(item.get('srt', '')))
             err = html.escape(str(item.get('error', '')))
             lang = html.escape(str(item.get('language', '')))
@@ -339,3 +330,14 @@ class WhisperSubtitleTask(BaseTask):
                 "status": "error",
                 "error": str(e)
             }
+
+    def _get_formatted_status(self, status_raw: str) -> str:
+        """Format status with emoji."""
+        if status_raw == 'success':
+            return '💾 ' + html.escape(status_raw)
+        elif status_raw == 'skipped':
+            return '✅ ⏩ ' + html.escape(status_raw)
+        elif status_raw == 'error':
+            return '❌ ' + html.escape(status_raw)
+        else:
+            return html.escape(status_raw)
