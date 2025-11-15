@@ -3,7 +3,7 @@
     border-radius: 4px;
     padding: 10px;
     margin: 10px auto;
-    background: rgba(204, 204, 204, 0.3); /* 20% darker than white */
+    background: rgba(204, 204, 204, 0.2);
     max-width: 90%;
 }
 
@@ -31,13 +31,14 @@
     max-width: 90%;
     border-collapse: collapse;
     border: none;
-    background: rgba(179, 179, 179, 0.3); /* 10% darker than white */
 }
 
 .task-result-table tbody tr td {
     padding: 5px;
     border: none;
     vertical-align: top;
+    background: none;
+    background-color: transparent;
 }
 
 .task-result-table tbody tr td:first-child {
