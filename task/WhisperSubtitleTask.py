@@ -1,10 +1,10 @@
 from task.BaseTask import BaseTask
 from typing import Any, Dict, List
-import whisper
 from whisper.utils import get_writer
 import html
 import os
 import time
+import whisper
 
 VIDEO_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".webm",
@@ -32,50 +32,34 @@ class WhisperSubtitleTask(BaseTask):
             if len(files) == 0:
                 return {"dir_path": dir_path, "mapped_dir": mapped_dir, "model": model_name, "files": [], "processed": 0, "skipped": 0, "failed": 0}
 
+            self._print(f"Filtering: " + '\n  * '.join(files))
+            files_to_process, results, skipped = self._filter_processed_videos(files, overwrite)
+
+            if len(files_to_process) == 0:
+                self._print("No files to process")
+                summary = {
+                    "dir_path": dir_path,
+                    "mapped_dir": mapped_dir,
+                    "model": model_name,
+                    "files": results,
+                    "processed": 0,
+                    "skipped": skipped,
+                    "failed": 0,
+                }
+                return summary
+
             self._print(f"Loading model: {model_name}")
             model = self._get_model(model_name)
 
             processed = 0
-            skipped = 0
             failed = 0
-            results: List[Dict[str, Any]] = []
-            for idx, video_path in enumerate(files, start=1):
-                try:
-                    srt_path = self._derive_srt_path(video_path)
-                    if (not overwrite) and os.path.exists(srt_path):
-                        skipped += 1
-                        results.append({
-                            "path": video_path,
-                            "status": "skipped",
-                            "reason": "subtitle already exists",
-                            "srt": srt_path
-                        })
-                        continue
-
-                    self._print(f"[{idx}/{len(files)}] Transcribing: {video_path}")
-                    t0 = time.perf_counter()
-                    result = model.transcribe(video_path, fp16=False, language=language, verbose=False)
-                    # write SRT next to the video
-                    writer = get_writer("srt", os.path.dirname(video_path))
-                    writer(result, video_path)
-                    dt = time.perf_counter() - t0
-
+            for idx, video_path in enumerate(files_to_process, start=1):
+                success, result_item = self._do_transcribe_video(model, video_path, idx, len(files_to_process), language)
+                if success:
                     processed += 1
-                    results.append({
-                        "path": video_path,
-                        "status": "success",
-                        "srt": srt_path,
-                        "language": result.get("language"),
-                        "segments": len(result.get("segments", [])),
-                        "seconds": round(dt, 2)
-                    })
-                except Exception as e:
+                else:
                     failed += 1
-                    results.append({
-                        "path": video_path,
-                        "status": "error",
-                        "error": str(e)
-                    })
+                results.append(result_item)
 
             summary = {
                 "dir_path": dir_path,
@@ -104,11 +88,14 @@ class WhisperSubtitleTask(BaseTask):
 
     def html_output(self, data: Dict[str, Any]) -> str:
         if 'error' in data and not data.get('files'):
+            self._print(f"Rendering error template: {data['error']}")
             return self._render_html_from_template('template/YouTubeDownloaderError.html', {
                 'error_message': html.escape(str(data['error']))
             })
+        files = data.get('files', [])
+        self._print(f"Rendering html_output with {len(files)} files")
         items_html_parts: List[str] = []
-        for item in data.get('files', []):
+        for idx, item in enumerate(files, start=1):
             path = html.escape(str(item.get('path', '')))
             status = html.escape(str(item.get('status', 'unknown')))
             srt = html.escape(str(item.get('srt', '')))
@@ -116,6 +103,7 @@ class WhisperSubtitleTask(BaseTask):
             lang = html.escape(str(item.get('language', '')))
             segs = html.escape(str(item.get('segments', '')))
             secs = html.escape(str(item.get('seconds', '')))
+            self._print(f"  [{idx}/{len(files)}] Rendering item: {status} - {path}")
             items_html_parts.append(self._render_html_from_template('template/WhisperSubtitleItem.html', {
                 'path': path,
                 'status': status,
@@ -126,6 +114,7 @@ class WhisperSubtitleTask(BaseTask):
                 'error': err,
             }))
         items_html = "\n".join(items_html_parts)
+        self._print(f"Rendering main list template with {len(items_html_parts)} items")
         return self._render_html_from_template('template/WhisperSubtitleList.html', {
             'dir_path': html.escape(str(data.get('dir_path', ''))),
             'model': html.escape(str(data.get('model', ''))),
@@ -193,3 +182,53 @@ class WhisperSubtitleTask(BaseTask):
 
     def _get_model(self, model_name: str):
         return whisper.load_model(model_name)
+
+    def _filter_processed_videos(self, files: List[str], overwrite: bool) -> tuple[List[str], List[Dict[str, Any]], int]:
+        """
+        Filter videos to process by excluding those with existing SRT when overwrite is False.
+        Returns: (files_to_process, skipped_results, skipped_count)
+        """
+        files_to_process: List[str] = []
+        results: List[Dict[str, Any]] = []
+        skipped = 0
+        for video_path in files:
+            srt_path = self._derive_srt_path(video_path)
+            if (not overwrite) and os.path.exists(srt_path):
+                skipped += 1
+                results.append({
+                    "path": video_path,
+                    "status": "skipped",
+                    "reason": "subtitle already exists",
+                    "srt": srt_path
+                })
+            else:
+                files_to_process.append(video_path)
+        return files_to_process, results, skipped
+
+    def _do_transcribe_video(self, model: Any, video_path: str, idx: int, total: int, language: Any) -> tuple[bool, Dict[str, Any]]:
+        """
+        Transcribe a single video file and return (success, result_dict).
+        """
+        try:
+            srt_path = self._derive_srt_path(video_path)
+            self._print(f"[{idx}/{total}] Transcribing: {video_path}")
+            t0 = time.perf_counter()
+            result = model.transcribe(video_path, fp16=False, language=language, verbose=False)
+            # write SRT next to the video
+            writer = get_writer("srt", os.path.dirname(video_path))
+            writer(result, video_path)
+            dt = time.perf_counter() - t0
+            return True, {
+                "path": video_path,
+                "status": "success",
+                "srt": srt_path,
+                "language": result.get("language"),
+                "segments": len(result.get("segments", [])),
+                "seconds": round(dt, 2)
+            }
+        except Exception as e:
+            return False, {
+                "path": video_path,
+                "status": "error",
+                "error": str(e)
+            }
