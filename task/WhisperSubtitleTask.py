@@ -2,6 +2,7 @@ from task.BaseTask import BaseTask
 from typing import Any, Dict, List
 from whisper.utils import get_writer
 import html
+import json
 import os
 import time
 import whisper
@@ -65,6 +66,7 @@ class WhisperSubtitleTask(BaseTask):
                 "dir_path": dir_path,
                 "mapped_dir": mapped_dir,
                 "model": model_name,
+                "language": language if language else "auto",
                 "files": results,
                 "processed": processed,
                 "skipped": skipped,
@@ -113,15 +115,35 @@ class WhisperSubtitleTask(BaseTask):
             segs = html.escape(str(item.get('segments', '')))
             secs = html.escape(str(item.get('seconds', '')))
             
-            # Read SRT file content if it exists
-            srt_content = ''
+            # Read SRT file and parse into table format
+            parsed_srt_content = ''
             srt_path_raw = item.get('srt', '')
             if srt_path_raw and os.path.exists(srt_path_raw):
                 try:
-                    with open(srt_path_raw, 'r', encoding='utf-8') as f:
-                        srt_content = html.escape(f.read())
+                    parsed_srt_content = self._parse_srt_to_table(srt_path_raw)
                 except Exception as e:
-                    srt_content = html.escape(f"Error reading file: {str(e)}")
+                    parsed_srt_content = html.escape(f"Error reading file: {str(e)}")
+            
+            # Read JSON file and render subtitle component
+            subtitle_html = ''
+            json_path_raw = item.get('srt', '').replace('.srt', '.json') if item.get('srt') else ''
+            if json_path_raw and os.path.exists(json_path_raw):
+                try:
+                    with open(json_path_raw, 'r', encoding='utf-8') as f:
+                        subtitle_data = json.load(f)
+                        # Build rows for the subtitle table
+                        rows_html = []
+                        for timestamp in sorted(subtitle_data.keys(), key=int):
+                            text = html.escape(subtitle_data[timestamp])
+                            rows_html.append(self._render_html_from_template('template/WhisperSubtitleRow.html', {
+                                'timestamp': timestamp,
+                                'text': text,
+                            }))
+                        subtitle_html = self._render_html_from_template('template/WhisperSubtitleBox.html', {
+                            'rows': '\n'.join(rows_html)
+                        })
+                except Exception as e:
+                    subtitle_html = html.escape(f"Error reading subtitle: {str(e)}")
             
             self._print(f"  [{idx}/{len(files)}] Rendering item: {status} - {path}")
             items_html_parts.append(self._render_html_from_template('template/WhisperSubtitleItem.html', {
@@ -132,13 +154,15 @@ class WhisperSubtitleTask(BaseTask):
                 'segments': segs,
                 'seconds': secs,
                 'error': err,
-                'srt_content': srt_content,
+                'parsed_srt_content': parsed_srt_content,
+                'subtitle_box': subtitle_html,
             }))
         items_html = "\n".join(items_html_parts)
         self._print(f"Rendering summary widget")
         summary_html = self._render_html_from_template('template/WhisperSubtitleSummary.html', {
             'dir_path': html.escape(str(data.get('dir_path', ''))),
             'model': html.escape(str(data.get('model', ''))),
+            'language': html.escape(str(data.get('language', 'auto'))),
             'processed': str(data.get('processed', 0)),
             'skipped': str(data.get('skipped', 0)),
             'failed': str(data.get('failed', 0)),
@@ -205,6 +229,60 @@ class WhisperSubtitleTask(BaseTask):
         base, _ = os.path.splitext(video_path)
         return f"{base}.srt"
 
+    def _derive_txt_path(self, video_path: str) -> str:
+        base, _ = os.path.splitext(video_path)
+        return f"{base}.txt"
+
+    def _derive_json_path(self, video_path: str) -> str:
+        base, _ = os.path.splitext(video_path)
+        return f"{base}.json"
+
+    def _write_plain_transcription(self, txt_path: str, segments: List[Dict[str, Any]]) -> None:
+        """Write plain text transcription to file, one segment per line."""
+        with open(txt_path, 'w', encoding='utf-8') as f:
+            for segment in segments:
+                text = segment.get("text", "").strip()
+                if text:
+                    f.write(text + "\n")
+
+    def _write_json_transcription(self, json_path: str, segments: List[Dict[str, Any]]) -> None:
+        """Write JSON transcription with timestamps as keys and text as values."""
+        transcription_dict = {}
+        for segment in segments:
+            start_time = int(segment.get("start", 0))
+            text = segment.get("text", "").strip()
+            if text:
+                transcription_dict[start_time] = text
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(transcription_dict, f, ensure_ascii=False, indent=2)
+
+    def _parse_srt_to_table(self, srt_path: str) -> str:
+        """Parse SRT file and return HTML table with timestamps and text."""
+        import re
+        with open(srt_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Parse SRT format: index, timestamp, text, blank line
+        pattern = r'\d+\n(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\n(.*?)(?=\n\n|\Z)'
+        matches = re.findall(pattern, content, re.DOTALL)
+        
+        if not matches:
+            return html.escape("No subtitles found")
+        
+        rows_html = []
+        for start_time, _, text in matches:
+            # Convert timestamp from HH:MM:SS,mmm to HH:MM:SS
+            timestamp = start_time.split(',')[0]
+            text_clean = text.strip().replace('\n', ' ')
+            rows_html.append(self._render_html_from_template('template/WhisperSubtitleTableRow.html', {
+                'timestamp': html.escape(timestamp),
+                'text': html.escape(text_clean),
+            }))
+        
+        return self._render_html_from_template('template/WhisperSubtitleTable.html', {
+            'rows': '\n'.join(rows_html)
+        })
+
     def _get_model(self, model_name: str):
         return whisper.load_model(model_name)
 
@@ -236,12 +314,16 @@ class WhisperSubtitleTask(BaseTask):
         """
         try:
             srt_path = self._derive_srt_path(video_path)
+            txt_path = self._derive_txt_path(video_path)
+            json_path = self._derive_json_path(video_path)
             self._print(f"[{idx}/{total}] Transcribing: {video_path}")
             t0 = time.perf_counter()
             result = model.transcribe(video_path, fp16=False, language=language, verbose=False)
-            # write SRT next to the video
             writer = get_writer("srt", os.path.dirname(video_path))
             writer(result, video_path)
+            segments = result.get("segments", [])
+            self._write_plain_transcription(txt_path, segments)
+            self._write_json_transcription(json_path, segments)
             dt = time.perf_counter() - t0
             return True, {
                 "path": video_path,

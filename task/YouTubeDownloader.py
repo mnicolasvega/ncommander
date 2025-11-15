@@ -105,7 +105,7 @@ class YouTubeDownloader(BaseTask):
     def dependencies(self) -> Dict[str, Any]:
         return {
             "pip": [
-                "yt-dlp==2024.8.6",
+                "yt-dlp>=2024.11.18",
             ],
             "other": [],
         }

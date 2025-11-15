@@ -1,11 +1,11 @@
 {
-    "_comment": "yt-dlp configuration for YouTube downloads. To use browser cookies, add 'cookiesfrombrowser': ['chrome'] or specify a cookies file path.",
+    "_comment": "yt-dlp configuration for YouTube downloads. Removed cookiesfrombrowser to avoid container access issues. Using enhanced player_client and po_token workaround.",
     "format": "best[ext=mp4]/best",
     "quiet": false,
     "no_warnings": false,
     "extractor_args": {
         "youtube": {
-            "player_client": ["web", "ios"],
+            "player_client": ["ios", "android", "web"],
             "skip": ["hls", "dash"]
         }
     },
