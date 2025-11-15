@@ -1,3 +1,4 @@
+from service.PromptService import PromptService
 from task.BaseTask import BaseTask
 from task.exception import LocalLLMError
 from typing import Any, Dict
@@ -8,6 +9,10 @@ import urllib.request
 class LocalLLM(BaseTask):
     DEFAULT_MODEL_URL = "https://huggingface.co/TheBloke/TinyLLaMA-1.1b-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
     DEFAULT_MODEL_NAME = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._prompt_service = PromptService()
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -20,9 +25,14 @@ class LocalLLM(BaseTask):
             response = self._evaluate_prompt(prompt, container_model_path, carry)
             return {"prompt": prompt, "response": response}
         except LocalLLMError as e:
+            error_msg = f"LocalLLMError: {str(e)}"
+            self._print(error_msg)
             return {"prompt": carry.get('prompt', ''), "error": str(e)}
         except Exception as e:
-            self._print(f"Error: {e}")
+            import traceback
+            error_msg = f"Unexpected error: {str(e)}"
+            self._print(error_msg)
+            self._print(f"Traceback: {traceback.format_exc()}")
             return {"prompt": carry.get('prompt', ''), "error": str(e)}
 
     def text_output(self, data: Dict[str, Any]) -> str:
@@ -49,14 +59,6 @@ class LocalLLM(BaseTask):
     def interval(self) -> int:
         return 300
 
-    def _get_model_path(self, model_name: str) -> str:
-        """Get model path: use provided name, or download default if not provided."""
-        if model_name:
-            model_name = str(model_name).strip()
-            return self._resolve_model_path(model_name)
-        else:
-            return self._get_or_download_default_model()
-
     def dependencies(self) -> Dict[str, Any]:
         return {
             "pip": [
@@ -75,7 +77,7 @@ class LocalLLM(BaseTask):
         models_dir = os.path.join(commander_dir, 'model')
         volumes = {
             models_dir: {
-                "bind": "/app/model",
+                "bind": "/app/lib/model",
                 "mode": "rw",
             }
         }
@@ -96,7 +98,7 @@ class LocalLLM(BaseTask):
         temperature = float(carry.get('temperature', 0.2))
         top_p = float(carry.get('top_p', 0.95))
         llm = self._get_model(llm_model_path, carry)
-        formatted_prompt = self._get_formatted_prompt(prompt)
+        formatted_prompt = self._prompt_service.get_formatted_prompt(prompt)
         self._print(f"Executing: {prompt}")
         result = llm.create_completion(
             prompt = formatted_prompt,
@@ -108,33 +110,35 @@ class LocalLLM(BaseTask):
         self._print(f"Answer: {text}")
         return text
 
-    def _get_formatted_prompt(self, prompt: str) -> str:
-        """Format prompt with instructions to guide the LLM."""
-        instructions = (
-            "Provide a clear, informative answer with medium length "
-            "(2-3 sentences, not too brief and not too verbose)."
-        )
-        return f"{prompt}\n\nInstructions: {instructions}\n\nAnswer:"
+    def _get_model_path(self, model_name: str) -> str:
+        """Get model path: use provided name, or download default if not provided."""
+        if model_name:
+            model_name = str(model_name).strip()
+            return self._resolve_model_path(model_name)
+        else:
+            return self._get_or_download_default_model()
 
     def _get_model(self, llm_model_path: str, carry: Dict[str, Any]):
         """Load and initialize the LLM model."""
         from llama_cpp import Llama
         n_ctx = int(carry.get('n_ctx', 2048))
         n_gpu_layers = int(carry.get('n_gpu_layers', 0))
-        self._print(f"Model loaded: {llm_model_path}")
-        return Llama(
+        self._print(f"Loading model: {llm_model_path}")
+        llm = Llama(
             model_path = llm_model_path,
             n_ctx = n_ctx,
             n_gpu_layers = n_gpu_layers,
-            verbose = False,
+            verbose = True,
         )
+        self._print(f"Model loaded successfully: {llm_model_path}")
+        return llm
 
     def _container_model_path(self, model_path: str, params: Dict[str, Any]) -> str:
-        if str(model_path).startswith('/app/'):
+        if str(model_path).startswith('/ncommander/'):
             return model_path
         if 'model/' in str(model_path) or '/model/' in str(model_path):
             model_name = os.path.basename(model_path)
-            return f"/app/model/{model_name}"
+            return f"/ncommander/lib/model/{model_name}"
         mapping = self.volumes(params).get(model_path)
         return mapping['bind'] if mapping else model_path
 
