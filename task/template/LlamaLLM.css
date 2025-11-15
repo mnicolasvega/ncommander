@@ -1,0 +1,27 @@
+.llama-llm-container {
+    margin: 10px 0;
+}
+
+.llama-llm-card {
+    border: 1px solid #4caf50;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.llama-llm-section {
+    margin: 10px 0;
+}
+
+.llama-llm-content {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 5px 0;
+    font-size: 0.9rem;
+    max-width: 90%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}

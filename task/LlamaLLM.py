@@ -2,11 +2,11 @@ from service.ModelFactory import ModelFactory
 from service.PromptService import PromptService
 from task.BaseTask import BaseTask
 from task.exception import LocalLLMError
-from typing import Any, Dict
+from typing import Any, Dict, List
 import html
 import os
 
-class LocalLLM(BaseTask):
+class LlamaLLM(BaseTask):
     def __init__(self) -> None:
         super().__init__()
         self._prompt_service = PromptService()
@@ -14,41 +14,67 @@ class LocalLLM(BaseTask):
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            prompt = str(carry.get('prompt', '')).strip()
-            if not prompt:
-                raise LocalLLMError("prompt is required")
+            prompts = carry.get('prompts', [])
+            if not prompts:
+                raise LocalLLMError("prompts list is required")
+            if not isinstance(prompts, list):
+                raise LocalLLMError("prompts must be a list of strings")
+            
             llm = self._model_factory.get_model(carry)
-            response = self._evaluate_prompt(prompt, llm, carry)
-            return {"prompt": prompt, "response": response}
+            results = []
+            
+            for prompt in prompts:
+                prompt_str = str(prompt).strip()
+                if not prompt_str:
+                    continue
+                response = self._evaluate_prompt(prompt_str, llm, carry)
+                results.append({"prompt": prompt_str, "response": response})
+            
+            return {"results": results}
         except LocalLLMError as e:
             self._print(f"Error: {str(e)}")
-            return {"prompt": carry.get('prompt', ''), "error": str(e)}
+            return {"error": str(e)}
         except Exception as e:
             import traceback
             self._print(f"Error: {str(e)}")
             self._print(f"Traceback: {traceback.format_exc()}")
-            return {"prompt": carry.get('prompt', ''), "error": str(e)}
+            return {"error": str(e)}
 
     def text_output(self, data: Dict[str, Any]) -> str:
         if 'error' in data:
             return f"error: {data['error']}"
-        response = data.get('response', '')
-        return response[:2000]
+        results = data.get('results', [])
+        output_lines = []
+        for result in results:
+            prompt = result.get('prompt', '')
+            response = result.get('response', '')
+            output_lines.append(f"Q: {prompt}")
+            output_lines.append(f"A: {response[:500]}")
+            output_lines.append("")
+        return "\n".join(output_lines)[:2000]
 
     def html_output(self, data: Dict[str, Any]) -> str:
         if 'error' in data:
-            return self._render_html_from_template('template/LocalLLMError.html', {
+            return self._render_html_from_template('template/LlamaLLMError.html', {
                 'error_message': html.escape(str(data['error']))
             })
-        prompt = html.escape(str(data.get('prompt', '')))
-        response = html.escape(str(data.get('response', '')))
-        return self._render_html_from_template('template/LocalLLM.html', {
-            'prompt': prompt,
-            'response': response
+        results = data.get('results', [])
+        composed_html = []
+        for result in results:
+            prompt = html.escape(str(result.get('prompt', '')))
+            response = html.escape(str(result.get('response', '')))
+            prompt_html = self._render_html_from_template('template/LlamaLLMPrompt.html', {
+                'prompt': prompt,
+                'response': response
+            })
+            composed_html.append(prompt_html)
+        content = '\n'.join(composed_html)
+        return self._render_html_from_template('template/LlamaLLM.html', {
+            'content': content
         })
 
     def name(self) -> str:
-        return "local_llm"
+        return "llama_llm"
 
     def interval(self) -> int:
         return 300

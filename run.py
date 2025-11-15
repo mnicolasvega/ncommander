@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from task.DirManager import DirManager
 from task.DirObserver import DirObserver
 from task.FlaskTask import FlaskTask
-from task.LocalLLM import LocalLLM
+from task.LlamaLLM import LlamaLLM
 from task.Message import Message
 from task.SystemMonitor import SystemMonitor
 from task.TaskData import TaskData
@@ -31,12 +31,16 @@ def main() -> None:
         {
             'task': UI(),
             'parameters': {'port': 7000},
-            'order': 3
+            'order': 101
         },
         {
-            'task': LocalLLM(),
+            'task': LlamaLLM(),
             'parameters': {
-                'prompt': "How big is a black hole?",
+                'prompts': [
+                    "What is a black hole?",
+                    "What is a white hole?",
+                    "What is a wormhole?",
+                ],
                 'model_name': LLM_MODEL_NAME,
             },
             'order': 1
@@ -46,11 +50,11 @@ def main() -> None:
         #    'parameters': {'channels': YOUTUBE_CHANNELS_JSON},
         #    'order': 1
         #},
-        #{
-        #    'task': Message(),
-        #    'parameters': {},
-        #    'order': 2
-        #},
+        {
+            'task': Message(),
+            'parameters': {},
+            'order': 2
+        },
         #{
         #    'task': DirObserver(),
         #    'parameters': {
@@ -61,11 +65,11 @@ def main() -> None:
         #    },
         #    'order': 3
         #},
-        #{
-        #    'task': SystemMonitor(),
-        #    'parameters': {},
-        #    'order': 2
-        #},
+        {
+            'task': SystemMonitor(),
+            'parameters': {},
+            'order': 100
+        },
         #{
         #    'task': TaskData(),
         #    'parameters': {},
