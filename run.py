@@ -72,7 +72,7 @@ def main() -> None:
         {
             'task': Message(),
             'parameters': {},
-            'order': 2
+            'order': 99
         },
         #{
         #    'task': DirObserver(),

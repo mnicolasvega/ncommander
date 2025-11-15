@@ -5,7 +5,7 @@
     "no_warnings": false,
     "extractor_args": {
         "youtube": {
-            "player_client": ["android", "web"],
+            "player_client": ["web", "ios"],
             "skip": ["hls", "dash"]
         }
     },

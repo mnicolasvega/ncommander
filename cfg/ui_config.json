@@ -1,7 +1,11 @@
 [
   {
+    "name": "youtube_downloader",
+    "order": 1
+  },
+  {
     "name": "random_messager",
-    "order": 2
+    "order": 99
   },
   {
     "name": "system_monitor",
