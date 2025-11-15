@@ -4,6 +4,10 @@
     "order": 1
   },
   {
+    "name": "whisper_subtitles",
+    "order": 1
+  },
+  {
     "name": "random_messager",
     "order": 99
   },

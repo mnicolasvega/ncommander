@@ -62,13 +62,13 @@ def main() -> None:
             },
             'order': 1
         },
-        #{
-        #    'task': WhisperSubtitleTask(),
-        #    'parameters': {
-        #        'dir_path': '/app/var/youtube_downloader',
-        #    },
-        #    'order': 1
-        #},
+        {
+            'task': WhisperSubtitleTask(),
+            'parameters': {
+                'dir_path': '/app/var/youtube_downloader',
+            },
+            'order': 1
+        },
         {
             'task': Message(),
             'parameters': {},

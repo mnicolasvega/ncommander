@@ -114,13 +114,17 @@ class WhisperSubtitleTask(BaseTask):
                 'error': err,
             }))
         items_html = "\n".join(items_html_parts)
-        self._print(f"Rendering main list template with {len(items_html_parts)} items")
-        return self._render_html_from_template('template/WhisperSubtitleList.html', {
+        self._print(f"Rendering summary widget")
+        summary_html = self._render_html_from_template('template/WhisperSubtitleSummary.html', {
             'dir_path': html.escape(str(data.get('dir_path', ''))),
             'model': html.escape(str(data.get('model', ''))),
             'processed': str(data.get('processed', 0)),
             'skipped': str(data.get('skipped', 0)),
             'failed': str(data.get('failed', 0)),
+        })
+        self._print(f"Rendering main list template with {len(items_html_parts)} items")
+        return self._render_html_from_template('template/WhisperSubtitleList.html', {
+            'summary': summary_html,
             'items': items_html,
         })
 

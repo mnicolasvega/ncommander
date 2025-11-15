@@ -6,8 +6,9 @@
     border: 1px solid #4caf50;
     border-radius: 4px;
     padding: 10px;
-    margin: 10px 0;
+    margin: 10px auto;
     background: rgba(255, 255, 255, 0.3);
+    max-width: 90%;
 }
 
 .youtube-downloader-card.youtube-downloader-error {
@@ -17,19 +18,28 @@
 .youtube-downloader-section {
     margin: 5px 0;
     font-size: 0.9rem;
+    display: flex;
+    align-items: baseline;
+    text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .youtube-downloader-label {
     font-weight: bold;
-    color: #555;
+    color: #1a1a1a;
+    min-width: 120px;
+    display: inline-block;
+    text-align: left;
 }
 
 .youtube-downloader-error-card {
     border: 1px solid #f44336;
     border-radius: 4px;
     padding: 10px;
-    margin: 10px 0;
+    margin: 10px auto;
     background: rgba(255, 255, 255, 0.3);
+    max-width: 90%;
 }
 
 .youtube-downloader-error-message {
