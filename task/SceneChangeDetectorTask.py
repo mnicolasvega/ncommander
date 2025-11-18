@@ -29,6 +29,7 @@ class SceneChangeDetectorTask(BaseTask):
             files, expand_skips = self._collect_video_files(inputs, recursive, in_container, carry)
             results.extend(expand_skips)
             skipped += len(expand_skips)
+            self._print(f"collected files={len(files)}, expand_skips={len(expand_skips)}")
 
             for idx, host_path in enumerate(files, start=1):
                 try:
@@ -54,9 +55,11 @@ class SceneChangeDetectorTask(BaseTask):
                     self._print(f"[{idx}/{len(files)}] Detecting scenes: {host_path}")
                     scene_list = self._detect_scenes(mapped_path, threshold)
                     scenes_serialized = self._serialize_scenes(scene_list)
+                    self._print(f"detected {len(scene_list)} scenes")
 
                     json_host_path = self._derive_scenes_json_path(host_path)
                     json_container_path = self._map_host_to_container_file(json_host_path, carry) if in_container else json_host_path
+                    self._print(f"writing scenes json: host={json_host_path}, container={json_container_path}")
                     self._write_json(json_container_path, {
                         "path": mapped_path,
                         "threshold": threshold,
@@ -73,6 +76,7 @@ class SceneChangeDetectorTask(BaseTask):
                         "scenes": len(scenes_serialized)
                     })
                 except Exception as e:
+                    self._print(f"error processing {host_path}: {str(e)}")
                     failed += 1
                     results.append({
                         "path": host_path,
@@ -87,6 +91,7 @@ class SceneChangeDetectorTask(BaseTask):
                 "failed": failed,
                 "threshold": threshold,
             }
+            self._print(f"summary processed={processed}, skipped={skipped}, failed={failed}, files={len(results)}")
             return summary
         except Exception as e:
             import traceback
@@ -121,6 +126,7 @@ class SceneChangeDetectorTask(BaseTask):
     def dependencies(self) -> Dict[str, Any]:
         return {
             "pip": [
+                "numpy==1.26.4",
                 "scenedetect==0.6.4",
                 "opencv-python-headless==4.9.0.80",
             ],
@@ -137,14 +143,11 @@ class SceneChangeDetectorTask(BaseTask):
             sp = str(p).strip()
             if not sp or not os.path.isabs(sp):
                 continue
-            if os.path.isdir(sp):
-                if os.path.exists(sp):
-                    mount_points.append(sp)
+            ext = os.path.splitext(sp)[1].lower()
+            if ext in VIDEO_EXTENSIONS:
+                mount_points.append(os.path.dirname(sp))
             else:
-                parent = os.path.dirname(sp)
-                if os.path.exists(parent):
-                    mount_points.append(parent)
-        for i, d in enumerate(sorted(set(mount_points))):
+                mount_points.append(sp)
             volumes[d] = {
                 "bind": f"/mnt/scene_input_{i}",
                 "mode": "rw",
