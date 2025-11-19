@@ -1,3 +1,4 @@
+import html
 import json
 import os
 from scenedetect import SceneManager, open_video
@@ -20,19 +21,23 @@ class SceneChangeDetectorTask(BaseTask):
             in_container = bool(carry.get("in_container", False))
             threshold = float(carry.get("threshold", 27.0))
             recursive = bool(carry.get("recursive", True))
+            self._print(f"params: in_container={in_container}, threshold={threshold}, recursive={recursive}")
             inputs: List[str] = [str(p).strip() for p in video_paths_raw if str(p).strip()]
+            self._print(f"inputs: {inputs}")
             results: List[Dict[str, Any]] = []
             processed = 0
             skipped = 0
             failed = 0
 
             files, expand_skips = self._collect_video_files(inputs, recursive, in_container, carry)
+            self._print(f"collection: files={len(files)}, skips={len(expand_skips)}")
             results.extend(expand_skips)
             skipped += len(expand_skips)
             self._print(f"collected files={len(files)}, expand_skips={len(expand_skips)}")
 
             for idx, host_path in enumerate(files, start=1):
                 try:
+                    self._print(f"processing [{idx}/{len(files)}]: {host_path}")
                     if not os.path.isabs(host_path):
                         skipped += 1
                         results.append({
@@ -43,6 +48,7 @@ class SceneChangeDetectorTask(BaseTask):
                         continue
 
                     mapped_path = self._map_host_to_container_file(host_path, carry) if in_container else host_path
+                    self._print(f"mapped_path: {mapped_path}")
                     if not os.path.exists(mapped_path):
                         skipped += 1
                         results.append({
@@ -52,13 +58,32 @@ class SceneChangeDetectorTask(BaseTask):
                         })
                         continue
 
+                    json_host_path = self._derive_scenes_json_path(host_path)
+                    json_container_path = self._derive_scenes_json_path(mapped_path)
+                    
+                    if os.path.exists(json_container_path):
+                        try:
+                            with open(json_container_path, 'r', encoding='utf-8') as f:
+                                existing_data = json.load(f)
+                            total_scenes = existing_data.get('total_scenes', 0)
+                            self._print(f"Using existing scenes JSON for {host_path}: {total_scenes} scenes")
+                            processed += 1
+                            results.append({
+                                "path": host_path,
+                                "status": "success (cached)",
+                                "scenes_json": json_host_path,
+                                "scenes": total_scenes
+                            })
+                            continue
+                        except Exception as e:
+                            self._print(f"Error reading existing scenes JSON for {host_path}: {str(e)}")
+                            
+                    
                     self._print(f"[{idx}/{len(files)}] Detecting scenes: {host_path}")
                     scene_list = self._detect_scenes(mapped_path, threshold)
                     scenes_serialized = self._serialize_scenes(scene_list)
                     self._print(f"detected {len(scene_list)} scenes")
-
-                    json_host_path = self._derive_scenes_json_path(host_path)
-                    json_container_path = self._map_host_to_container_file(json_host_path, carry) if in_container else json_host_path
+                    self._print(f"scenes: {scenes_serialized[:2]}...")
                     self._print(f"writing scenes json: host={json_host_path}, container={json_container_path}")
                     self._write_json(json_container_path, {
                         "path": mapped_path,
@@ -90,8 +115,9 @@ class SceneChangeDetectorTask(BaseTask):
                 "skipped": skipped,
                 "failed": failed,
                 "threshold": threshold,
+                "files_count": len(results),
             }
-            self._print(f"summary processed={processed}, skipped={skipped}, failed={failed}, files={len(results)}")
+            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, files={len(results)}")
             return summary
         except Exception as e:
             import traceback
@@ -109,7 +135,79 @@ class SceneChangeDetectorTask(BaseTask):
         return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}"
 
     def html_output(self, data: Dict[str, Any]) -> str:
-        return json.dumps(data)
+        files = data.get('files', [])
+        # Build items HTML
+        items_html_parts: List[str] = []
+        for idx, item in enumerate(files, start=1):
+            path = html.escape(str(item.get('path', '')))
+            status = html.escape(str(item.get('status', 'unknown')))
+            scenes_json_path = str(item.get('scenes_json', '')).strip()
+            scenes_count = html.escape(str(item.get('scenes', 0)))
+            err = html.escape(str(item.get('error', '')))
+
+            scenes_box_html = ''
+            if scenes_json_path and os.path.exists(scenes_json_path):
+                try:
+                    with open(scenes_json_path, 'r', encoding='utf-8') as f:
+                        scenes_payload = json.load(f)
+                    scenes = scenes_payload.get('scenes', [])
+                    rows_html: List[str] = []
+                    for sidx, s in enumerate(scenes, start=1):
+                        start_tc = html.escape(str(s.get('start_timecode', '')))
+                        end_tc = html.escape(str(s.get('end_timecode', '')))
+                        try:
+                            start_sec = float(s.get('start_seconds', 0.0))
+                            end_sec = float(s.get('end_seconds', 0.0))
+                            dur = max(0.0, end_sec - start_sec)
+                        except Exception:
+                            dur = 0.0
+                        duration_str = self._format_duration(dur)
+                        rows_html.append(self._render_html_from_template('template/SceneChangeRow.html', {
+                            'index': str(sidx),
+                            'start_timecode': start_tc,
+                            'end_timecode': end_tc,
+                            'duration': duration_str,
+                        }))
+                    scenes_box_html = self._render_html_from_template('template/SceneChangeBox.html', {
+                        'rows': '\n'.join(rows_html)
+                    })
+                except Exception as e:
+                    scenes_box_html = html.escape(f"Error reading scenes: {str(e)}")
+
+            items_html_parts.append(self._render_html_from_template('template/SceneChangeItem.html', {
+                'index': str(idx),
+                'path': path,
+                'status': status,
+                'scenes': scenes_count,
+                'scenes_json': html.escape(scenes_json_path),
+                'error': err,
+                'scenes_box': scenes_box_html,
+            }))
+
+        summary_html = self._render_html_from_template('template/SceneChangeSummary.html', {
+            'processed': str(data.get('processed', 0)),
+            'skipped': str(data.get('skipped', 0)),
+            'failed': str(data.get('failed', 0)),
+            'threshold': html.escape(str(data.get('threshold', ''))),
+        })
+
+        return self._render_html_from_template('template/SceneChangeList.html', {
+            'summary': summary_html,
+            'items': '\n'.join(items_html_parts),
+        })
+
+    def _format_duration(self, seconds: float) -> str:
+        try:
+            s = int(round(seconds))
+            h = s // 3600
+            m = (s % 3600) // 60
+            sec = s % 60
+            if h > 0:
+                return f"{h:02d}:{m:02d}:{sec:02d}"
+            else:
+                return f"{m:02d}:{sec:02d}"
+        except Exception:
+            return "00:00"
 
     def interval(self) -> int:
         return 60 * 60
@@ -148,7 +246,10 @@ class SceneChangeDetectorTask(BaseTask):
                 mount_points.append(os.path.dirname(sp))
             else:
                 mount_points.append(sp)
-            volumes[d] = {
+        # Remove duplicates while preserving order
+        unique_mounts = sorted(set(mount_points))
+        for i, mount_point in enumerate(unique_mounts):
+            volumes[mount_point] = {
                 "bind": f"/mnt/scene_input_{i}",
                 "mode": "rw",
             }
