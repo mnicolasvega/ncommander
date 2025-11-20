@@ -1,6 +1,7 @@
 from task.BaseTask import BaseTask
 from typing import Any, Dict, List
 import cv2
+import html
 import json
 import os
 
@@ -154,6 +155,101 @@ class SceneFrameExtractorTask(BaseTask):
             self._print(f"Error: {str(e)}")
             self._print(f"Traceback: {traceback.format_exc()}")
             return {"error": str(e), "files": []}
+
+    def text_output(self, data: Dict[str, Any]) -> str:
+        if 'error' in data and not data.get('files'):
+            return f"error: {data['error']}"
+        processed = int(data.get('processed', 0))
+        skipped = int(data.get('skipped', 0))
+        failed = int(data.get('failed', 0))
+        total = processed + skipped + failed
+        return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}"
+
+    def html_output(self, data: Dict[str, Any]) -> str:
+        files = data.get('files', [])
+        items_html_parts: List[str] = []
+        
+        for idx, item in enumerate(files, start=1):
+            path = html.escape(str(item.get('path', '')))
+            status = html.escape(str(item.get('status', 'unknown')))
+            frames_count = html.escape(str(item.get('frames', 0)))
+            frames_dir = str(item.get('frames_dir', '')).strip()
+            err = html.escape(str(item.get('error', '')))
+            reason = html.escape(str(item.get('reason', '')))
+            
+            # Get video name
+            video_name = os.path.basename(path) if path else 'Unknown'
+            
+            # Build timestamps and thumbnails HTML
+            timestamps_html = ''
+            thumbnails_html = ''
+            
+            if status == 'success' and frames_dir and os.path.exists(frames_dir):
+                # Get scene timestamps from the corresponding .scenes.json
+                scenes_json_path = self._derive_scenes_json_path(path)
+                if os.path.exists(scenes_json_path):
+                    try:
+                        with open(scenes_json_path, 'r', encoding='utf-8') as f:
+                            scenes_data = json.load(f)
+                        scenes = scenes_data.get('scenes', [])
+                        
+                        # Build timestamps rows
+                        timestamp_rows = []
+                        for sidx, scene in enumerate(scenes, start=1):
+                            start_tc = html.escape(str(scene.get('start_timecode', '')))
+                            end_tc = html.escape(str(scene.get('end_timecode', '')))
+                            timestamp_rows.append(self._render_html_from_template('template/SceneFrameExtractorTimestamp.html', {
+                                'index': str(sidx),
+                                'start_timecode': start_tc,
+                                'end_timecode': end_tc,
+                            }))
+                        
+                        if timestamp_rows:
+                            timestamps_html = self._render_html_from_template('template/SceneFrameExtractorTimestampBox.html', {
+                                'rows': '\n'.join(timestamp_rows)
+                            })
+                    except Exception as e:
+                        timestamps_html = html.escape(f"Error reading scenes: {str(e)}")
+                
+                # List thumbnail files
+                try:
+                    frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
+                    thumbnail_parts = []
+                    for frame_file in frame_files:
+                        frame_path = os.path.join(frames_dir, frame_file)
+                        thumbnail_parts.append(self._render_html_from_template('template/SceneFrameExtractorThumbnail.html', {
+                            'thumbnail_path': html.escape(frame_path),
+                            'thumbnail_name': html.escape(frame_file),
+                        }))
+                    
+                    if thumbnail_parts:
+                        thumbnails_html = '\n'.join(thumbnail_parts)
+                except Exception as e:
+                    thumbnails_html = html.escape(f"Error listing frames: {str(e)}")
+            
+            items_html_parts.append(self._render_html_from_template('template/SceneFrameExtractorItem.html', {
+                'index': str(idx),
+                'video_name': html.escape(video_name),
+                'path': path,
+                'status': status,
+                'frames_count': frames_count,
+                'frames_dir': html.escape(frames_dir),
+                'error': err,
+                'reason': reason,
+                'timestamps_box': timestamps_html,
+                'thumbnails_box': thumbnails_html,
+            }))
+        
+        summary_html = self._render_html_from_template('template/SceneFrameExtractorSummary.html', {
+            'processed': str(data.get('processed', 0)),
+            'skipped': str(data.get('skipped', 0)),
+            'failed': str(data.get('failed', 0)),
+        })
+        
+        return self._render_html_from_template('template/SceneFrameExtractorList.html', {
+            'summary': summary_html,
+            'items': '\n'.join(items_html_parts),
+        })
 
     def dependencies(self) -> Dict[str, Any]:
         return {
