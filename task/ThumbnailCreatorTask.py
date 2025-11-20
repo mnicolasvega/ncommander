@@ -1,8 +1,8 @@
-from task.BaseTask import BaseTask
-from typing import Any, Dict, List
 import html
 import os
 import subprocess
+from task.BaseTask import BaseTask
+from typing import Any, Dict, List
 
 VIDEO_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".webm",
@@ -165,8 +165,10 @@ class ThumbnailCreatorTask(BaseTask):
                     thumbnail_parts = []
                     for frame_file in frame_files:
                         frame_path = os.path.join(frames_dir, frame_file)
+                        # Convert to var-relative path for Flask serving
+                        relative_path = self._get_var_relative_path(frame_path)
                         thumbnail_parts.append(self._render_html_from_template('template/ThumbnailCreatorThumbnail.html', {
-                            'thumbnail_path': html.escape(frame_path),
+                            'thumbnail_path': html.escape(relative_path),
                             'thumbnail_name': html.escape(frame_file),
                         }))
                     

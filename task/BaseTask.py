@@ -94,3 +94,15 @@ class BaseTask(TaskInterface):
         file_path = os.path.join(output_dir, f"{task_name}.json")
         with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
+
+    def _get_var_relative_path(self, absolute_path: str) -> str:
+        """
+        Convert absolute path to relative path from var directory.
+        E.g., /home/user/ncommander/var/task/file.jpg -> task/file.jpg
+        """
+        parts = absolute_path.split(os.sep)
+        try:
+            var_index = parts.index('var')
+            return os.sep.join(parts[var_index + 1:])
+        except (ValueError, IndexError):
+            return absolute_path

@@ -1,6 +1,6 @@
+import os
 from task.FlaskTask import FlaskTask
 from typing import Any, Dict
-import os
 
 class UI(FlaskTask):
     """Extends FlaskTask to dynamically generate and serve HTML from task outputs."""
@@ -41,6 +41,7 @@ class UI(FlaskTask):
         os.makedirs(os.path.dirname(script_path), exist_ok=True)
         task_template_dir = os.path.join(os.path.dirname(dir_root), "task", "template")
         tasks_config_path = os.path.join(os.path.dirname(dir_root), "cfg", "ui_config.json")
+        var_dir = os.path.join(os.path.dirname(dir_root), "var")
         template_path = os.path.join(os.path.dirname(__file__), 'ui_server_template.py')
         self._print(f"Generating server script using template {template_path}")
         with open(template_path, 'r', encoding='utf-8') as f:
@@ -48,6 +49,7 @@ class UI(FlaskTask):
         server_code = server_code \
             .replace('{{task_template_dir}}', task_template_dir) \
             .replace('{{tasks_config_path}}', tasks_config_path) \
+            .replace('{{var_dir}}', var_dir) \
             .replace('{{host}}', host) \
             .replace('{{port}}', str(port))
         with open(script_path, 'w', encoding='utf-8') as f:

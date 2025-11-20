@@ -2,9 +2,7 @@ from flask import Flask, send_from_directory
 import json
 import os
 import sys
-
 sys.path.insert(0, '/app')
-
 from task.OutputParser import OutputParser
 from web.Builder import Builder
 
@@ -12,6 +10,7 @@ app = Flask(__name__)
 
 TASK_TEMPLATE_DIR = "{{task_template_dir}}"
 TASKS_CONFIG_PATH = "{{tasks_config_path}}"
+VAR_DIR = "{{var_dir}}"
 HOST = '{{host}}'
 PORT = {{port}}
 
@@ -44,6 +43,11 @@ def index():
 def serve_template_files(filename):
     """Serve CSS and other template files."""
     return send_from_directory(TASK_TEMPLATE_DIR, filename)
+
+@app.route('/var/<path:filename>')
+def serve_var_files(filename):
+    """Serve files from var directory (thumbnails, frames, etc.)."""
+    return send_from_directory(VAR_DIR, filename)
 
 if __name__ == '__main__':
     app.run(host=HOST, port=PORT, debug=False)
