@@ -1,15 +1,7 @@
 [
   {
-    "name": "llama_video_summary",
-    "order": 0
-  },
-  {
-    "name": "whisper_subtitles",
+    "name": "scene_frame_extractor",
     "order": 1
-  },
-  {
-    "name": "youtube_downloader",
-    "order": 2
   },
   {
     "name": "system_monitor",

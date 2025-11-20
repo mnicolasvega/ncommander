@@ -204,7 +204,10 @@ class SceneFrameExtractorTask(BaseTask):
             timestamps_html = ''
             thumbnails_html = ''
             
-            if status == 'success' and frames_dir and os.path.exists(frames_dir):
+            # Show thumbnails for both success and skipped (when frames already exist)
+            should_show_thumbnails = (status == 'success' or (status == 'skipped' and 'frames already exist' in reason)) and frames_dir and os.path.exists(frames_dir)
+            
+            if should_show_thumbnails:
                 # Get scene timestamps from the corresponding .scenes.json
                 scenes_json_path = self._derive_scenes_json_path(path)
                 if os.path.exists(scenes_json_path):
@@ -284,7 +287,10 @@ class SceneFrameExtractorTask(BaseTask):
 
     def _derive_output_frames_dir(self, outdir: str, video_path: str) -> str:
         base_name = os.path.basename(video_path)
-        return os.path.join(outdir, "tasks", self.name(), "container", base_name)
+        # Use var/scene_frame_extractor/<video_name>/
+        # outdir is either /app/tmp or /path/to/ncommander/tmp
+        commander_dir = os.path.dirname(outdir)  # Gets /app or /path/to/ncommander
+        return os.path.join(commander_dir, "var", self.name(), base_name)
 
     def _collect_scene_json_files(self, inputs: List[str], recursive: bool, in_container: bool, params: Dict[str, Any]) -> (List[str], List[Dict[str, Any]]):
         found: List[str] = []
