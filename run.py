@@ -10,7 +10,7 @@ from task.SceneChangeDetectorTask import SceneChangeDetectorTask
 from task.SceneFrameExtractorTask import SceneFrameExtractorTask
 from task.SystemMonitor import SystemMonitor
 from task.TaskData import TaskData
-from task.UI import UI
+from task.UiFlask import UiFlask
 from task.WhisperSubtitleTask import WhisperSubtitleTask
 from task.YouTubeDownloader import YouTubeDownloader
 from task.YouTubeScannerTask import YouTubeScannerTask
@@ -52,7 +52,7 @@ def main() -> None:
             'order': 1
         },
         {
-            'task': UI(),
+            'task': UiFlask(),
             'parameters': {'port': 7000},
             'order': 101
         },

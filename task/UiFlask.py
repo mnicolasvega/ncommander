@@ -2,13 +2,13 @@ import os
 from task.FlaskTask import FlaskTask
 from typing import Any, Dict
 
-class UI(FlaskTask):
+class UiFlask(FlaskTask):
     """Extends FlaskTask to dynamically generate and serve HTML from task outputs."""
 
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         """Start Flask server that dynamically generates HTML from task outputs."""
         in_container = carry.get('in_container', False)
-        self._print(f"UI.run start - in_container={in_container}, carry_keys={list(carry.keys())}")
+        self._print(f"UiFlask.run start - in_container={in_container}, carry_keys={list(carry.keys())}")
         dependency_error = self._check_flask_dependency(in_container)
         if dependency_error:
             self._print(f"Dependency check failed for Flask: {dependency_error}")
