@@ -1,6 +1,6 @@
-import random
 from task.BaseTask import BaseTask
 from typing import Any, Dict
+import random
 
 MESSAGES = [
     "Hello world!",

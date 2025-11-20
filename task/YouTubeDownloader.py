@@ -1,6 +1,6 @@
+from service.FfmpegService import FfmpegService
 from task.BaseTask import BaseTask
 from typing import Any, Dict
-from service.FfmpegService import FfmpegService
 import html
 import json
 import os

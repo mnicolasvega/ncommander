@@ -1,10 +1,10 @@
-import html
-import json
-import os
 from scenedetect import SceneManager, open_video
 from scenedetect.detectors import ContentDetector
 from task.BaseTask import BaseTask
 from typing import Any, Dict, List, Tuple
+import html
+import json
+import os
 
 VIDEO_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".webm",

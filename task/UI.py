@@ -1,7 +1,6 @@
-import os
 from task.FlaskTask import FlaskTask
-from task.OutputParser import OutputParser
 from typing import Any, Dict
+import os
 
 class UI(FlaskTask):
     """Extends FlaskTask to dynamically generate and serve HTML from task outputs."""

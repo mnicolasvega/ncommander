@@ -1,10 +1,10 @@
+from task.TaskInterface import TaskInterface
+from typing import Any, Dict, Tuple
 import argparse
 import importlib
 import json
 import os
 import time
-from task.TaskInterface import TaskInterface
-from typing import Any, Dict, Tuple
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
