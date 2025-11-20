@@ -191,11 +191,19 @@ class SceneFrameExtractorTask(BaseTask):
         
         for idx, item in enumerate(files, start=1):
             path = html.escape(str(item.get('path', '')))
-            status = html.escape(str(item.get('status', 'unknown')))
+            status_raw = str(item.get('status', 'unknown'))
             frames_count = html.escape(str(item.get('frames', 0)))
             frames_dir = str(item.get('frames_dir', '')).strip()
             err = html.escape(str(item.get('error', '')))
-            reason = html.escape(str(item.get('reason', '')))
+            reason_raw = str(item.get('reason', ''))
+            
+            # Format status with reason if present
+            if reason_raw:
+                status_formatted = f"{status_raw}, {reason_raw}"
+            else:
+                status_formatted = status_raw
+            status = html.escape(status_formatted)
+            reason = ''  # Empty since it's now in status
             
             # Get video name
             video_name = os.path.basename(path) if path else 'Unknown'
@@ -205,7 +213,7 @@ class SceneFrameExtractorTask(BaseTask):
             thumbnails_html = ''
             
             # Show thumbnails for both success and skipped (when frames already exist)
-            should_show_thumbnails = (status == 'success' or (status == 'skipped' and 'frames already exist' in reason)) and frames_dir and os.path.exists(frames_dir)
+            should_show_thumbnails = (status_raw == 'success' or (status_raw == 'skipped' and 'frames already exist' in reason_raw)) and frames_dir and os.path.exists(frames_dir)
             
             if should_show_thumbnails:
                 # Get scene timestamps from the corresponding .scenes.json
@@ -238,13 +246,21 @@ class SceneFrameExtractorTask(BaseTask):
                 try:
                     frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
                     thumbnail_parts = []
-                    for frame_file in frame_files:
+                    for frame_idx, frame_file in enumerate(frame_files, start=1):
                         frame_path = os.path.join(frames_dir, frame_file)
                         # Convert to var-relative path for Flask serving
                         relative_path = self._get_var_relative_path(frame_path)
+                        
+                        # Get timestamp for this scene (frame_idx corresponds to scene index)
+                        timestamp = ''
+                        if frame_idx <= len(scenes):
+                            scene = scenes[frame_idx - 1]
+                            timestamp = str(scene.get('start_timecode', ''))
+                        
                         thumbnail_parts.append(self._render_html_from_template('template/SceneFrameExtractorThumbnail.html', {
                             'thumbnail_path': html.escape(relative_path),
                             'thumbnail_name': html.escape(frame_file),
+                            'timestamp': html.escape(timestamp),
                         }))
                     
                     if thumbnail_parts:
