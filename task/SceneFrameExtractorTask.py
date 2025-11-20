@@ -86,6 +86,26 @@ class SceneFrameExtractorTask(BaseTask):
                     dir_root = str(carry.get("outdir", "/app/tmp"))
                     frames_dir_container = self._derive_output_frames_dir(dir_root, video_path)
                     frames_dir_host = frames_dir_container
+                    
+                    # Skip if output folder exists and contains expected number of thumbnails
+                    if os.path.exists(frames_dir_container):
+                        try:
+                            existing_frames = [f for f in os.listdir(frames_dir_container) if f.endswith('.jpg')]
+                            expected_frames = len(scenes)
+                            if len(existing_frames) == expected_frames and expected_frames > 0:
+                                skipped += 1
+                                results.append({
+                                    "path": self._map_container_to_host_file(video_path, carry) if in_container else video_path,
+                                    "status": "skipped",
+                                    "reason": f"frames already exist ({len(existing_frames)}/{expected_frames})",
+                                    "frames_dir": frames_dir_host,
+                                    "frames": len(existing_frames)
+                                })
+                                self._print(f"Skipping {video_path}: frames already exist ({len(existing_frames)}/{expected_frames})")
+                                continue
+                        except Exception as e:
+                            self._print(f"Error checking existing frames: {str(e)}")
+                    
                     os.makedirs(frames_dir_container, exist_ok=True)
 
                     cap = cv2.VideoCapture(video_path)
