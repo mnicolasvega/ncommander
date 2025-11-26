@@ -42,16 +42,16 @@ def main() -> None:
         #    },
         #    'order': 0
         #},
-        {
-            'task': SceneFrameExtractorTask(),
-            'parameters': {
-                'video_paths': [
-                    PATH_DIR_SCENES
-                ],
-                'recursive': True,
-            },
-            'order': 1
-        },
+        #{
+        #    'task': SceneFrameExtractorTask(),
+        #    'parameters': {
+        #        'video_paths': [
+        #            PATH_DIR_SCENES
+        #        ],
+        #        'recursive': True,
+        #    },
+        #    'order': 1
+        #},
         {
             'task': ThumbnailCreatorTask(),
             'parameters': {

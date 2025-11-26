@@ -1,4 +1,5 @@
 import html
+import json
 import os
 import subprocess
 from task.BaseTask import BaseTask
@@ -9,8 +10,9 @@ VIDEO_EXTENSIONS = {
     ".m4v", ".flv", ".mpg", ".mpeg", ".wmv"
 }
 
-
 class ThumbnailCreatorTask(BaseTask):
+    INTERVAL_MS = 5000
+
     def name(self) -> str:
         return "thumbnail_creator"
 
@@ -20,45 +22,113 @@ class ThumbnailCreatorTask(BaseTask):
     def interval(self) -> int | None:
         return 60 * 60
 
+    def _get_queue_file_path(self, carry: Dict[str, Any]) -> str:
+        """Get the path to the queue.txt file."""
+        dir_root = str(carry.get("outdir", "/app/tmp"))
+        commander_dir = os.path.dirname(dir_root)
+        queue_dir = os.path.join(commander_dir, "var", self.name())
+        os.makedirs(queue_dir, exist_ok=True)
+        return os.path.join(queue_dir, "queue.txt")
+
+    def _read_queue(self, queue_file: str) -> List[str]:
+        """Read the queue from queue.txt. Returns empty list if file doesn't exist."""
+        if not os.path.exists(queue_file):
+            return []
+        try:
+            with open(queue_file, 'r') as f:
+                content = f.read().strip()
+                if not content:
+                    return []
+                # The last line contains the current queue as a JSON array
+                lines = content.split('\n')
+                if lines:
+                    return json.loads(lines[-1])
+                return []
+        except Exception as e:
+            self._print(f"Error reading queue: {str(e)}")
+            return []
+
+    def _write_queue(self, queue_file: str, queue: List[str]) -> None:
+        """Write the queue to queue.txt as a JSON array on a new line."""
+        try:
+            with open(queue_file, 'a') as f:
+                f.write(json.dumps(queue) + '\n')
+        except Exception as e:
+            self._print(f"Error writing queue: {str(e)}")
+
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            video_paths_raw = carry.get("video_paths", [])
-            if not isinstance(video_paths_raw, list) or len(video_paths_raw) == 0:
-                return {"error": "video_paths is required and must be a non-empty list", "files": []}
-
-            interval_ms = int(carry.get("interval_ms", 5000))
+            queue_file = self._get_queue_file_path(carry)
+            
+            # Read existing queue or initialize from video_paths
+            queue = self._read_queue(queue_file)
+            
+            # If queue is empty, initialize from video_paths parameter
+            if not queue:
+                video_paths_raw = carry.get("video_paths", [])
+                if not isinstance(video_paths_raw, list) or len(video_paths_raw) == 0:
+                    return {"error": "video_paths is required and must be a non-empty list", "files": [], "queue_remaining": 0}
+                
+                in_container = bool(carry.get("in_container", False))
+                recursive = bool(carry.get("recursive", True))
+                inputs = [str(p).strip() for p in video_paths_raw if str(p).strip()]
+                
+                # Collect all video files and expand directories
+                files, expand_skips = self._collect_video_files(inputs, recursive, in_container, carry)
+                self._print(f"collection: video_files={len(files)}, skips={len(expand_skips)}")
+                
+                if not files:
+                    return {
+                        "error": "no valid video files found",
+                        "files": expand_skips,
+                        "skipped": len(expand_skips),
+                        "queue_remaining": 0
+                    }
+                
+                queue = files
+                # Write initial queue
+                self._write_queue(queue_file, queue)
+                self._print(f"Initialized queue with {len(queue)} videos")
+            
+            interval_ms = int(carry.get("interval_ms", self.INTERVAL_MS))
             if interval_ms <= 0:
-                return {"error": "interval_ms must be a positive integer", "files": []}
+                return {"error": "interval_ms must be a positive integer", "files": [], "queue_remaining": len(queue)}
 
             in_container = bool(carry.get("in_container", False))
-            recursive = bool(carry.get("recursive", True))
-            self._print(f"params: in_container={in_container}, recursive={recursive}, interval_ms={interval_ms}")
+            self._print(f"params: in_container={in_container}, interval_ms={interval_ms}")
+            self._print(f"Queue status: {len(queue)} videos remaining")
             
-            inputs: List[str] = [str(p).strip() for p in video_paths_raw if str(p).strip()]
-            results: List[Dict[str, Any]] = []
+            # Process only the first video in the queue
+            if not queue:
+                return {
+                    "files": [],
+                    "processed": 0,
+                    "skipped": 0,
+                    "failed": 0,
+                    "files_count": 0,
+                    "interval_ms": interval_ms,
+                    "queue_remaining": 0,
+                    "message": "Queue is empty"
+                }
+            
+            host_video_path = queue[0]
+            results = []
             processed = 0
             skipped = 0
             failed = 0
-
-            files, expand_skips = self._collect_video_files(inputs, recursive, in_container, carry)
-            self._print(f"collection: video_files={len(files)}, skips={len(expand_skips)}")
-            results.extend(expand_skips)
-            skipped += len(expand_skips)
-
-            for idx, host_video_path in enumerate(files, start=1):
-                try:
-                    self._print(f"processing [{idx}/{len(files)}]: {host_video_path}")
-                    mapped_video_path = self._map_host_to_container_file(host_video_path, carry) if in_container else host_video_path
-                    
-                    if not os.path.exists(mapped_video_path):
-                        skipped += 1
-                        results.append({
-                            "path": host_video_path,
-                            "status": "skipped",
-                            "reason": "video does not exist or is not mounted"
-                        })
-                        continue
-
+            
+            try:
+                self._print(f"processing [1/{len(queue)}]: {host_video_path}")
+                mapped_video_path = self._map_host_to_container_file(host_video_path, carry) if in_container else host_video_path
+                
+                if not os.path.exists(mapped_video_path):
+                    skipped += 1
+                    results.append({
+                        "path": host_video_path,
+                        "status": "skipped",
+                        "reason": "video does not exist or is not mounted"
+                    })
+                else:
                     dir_root = str(carry.get("outdir", "/app/tmp"))
                     frames_dir_container = self._derive_output_frames_dir(dir_root, mapped_video_path)
                     frames_dir_host = self._map_container_to_host_file(frames_dir_container, carry) if in_container else frames_dir_container
@@ -77,39 +147,68 @@ class ThumbnailCreatorTask(BaseTask):
                                     "frames": len(existing_frames)
                                 })
                                 self._print(f"Skipping {mapped_video_path}: frames already exist ({len(existing_frames)})")
-                                continue
+                            else:
+                                # Folder exists but is empty, process it
+                                os.makedirs(frames_dir_container, exist_ok=True)
+                                exported = self._extract_frames_ffmpeg(mapped_video_path, frames_dir_container, interval_ms)
+                                
+                                if exported > 0:
+                                    processed += 1
+                                    results.append({
+                                        "path": host_video_path,
+                                        "status": "success",
+                                        "frames_dir": frames_dir_host,
+                                        "frames": exported
+                                    })
+                                else:
+                                    failed += 1
+                                    results.append({
+                                        "path": host_video_path,
+                                        "status": "error",
+                                        "error": "no frames extracted"
+                                    })
                         except Exception as e:
                             self._print(f"Error checking existing frames: {str(e)}")
-                    
-                    os.makedirs(frames_dir_container, exist_ok=True)
-
-                    # Extract frames using ffmpeg
-                    exported = self._extract_frames_ffmpeg(mapped_video_path, frames_dir_container, interval_ms)
-
-                    if exported > 0:
-                        processed += 1
-                        results.append({
-                            "path": host_video_path,
-                            "status": "success",
-                            "frames_dir": frames_dir_host,
-                            "frames": exported
-                        })
+                            failed += 1
+                            results.append({
+                                "path": host_video_path,
+                                "status": "error",
+                                "error": str(e)
+                            })
                     else:
-                        failed += 1
-                        results.append({
-                            "path": host_video_path,
-                            "status": "error",
-                            "error": "no frames extracted"
-                        })
-
-                except Exception as e:
-                    self._print(f"error processing {host_video_path}: {str(e)}")
-                    failed += 1
-                    results.append({
-                        "path": host_video_path,
-                        "status": "error",
-                        "error": str(e)
-                    })
+                        # Create folder and process
+                        os.makedirs(frames_dir_container, exist_ok=True)
+                        exported = self._extract_frames_ffmpeg(mapped_video_path, frames_dir_container, interval_ms)
+                        
+                        if exported > 0:
+                            processed += 1
+                            results.append({
+                                "path": host_video_path,
+                                "status": "success",
+                                "frames_dir": frames_dir_host,
+                                "frames": exported
+                            })
+                        else:
+                            failed += 1
+                            results.append({
+                                "path": host_video_path,
+                                "status": "error",
+                                "error": "no frames extracted"
+                            })
+            
+            except Exception as e:
+                self._print(f"error processing {host_video_path}: {str(e)}")
+                failed += 1
+                results.append({
+                    "path": host_video_path,
+                    "status": "error",
+                    "error": str(e)
+                })
+            
+            # Remove processed video from queue
+            queue = queue[1:]
+            self._write_queue(queue_file, queue)
+            self._print(f"Updated queue: {len(queue)} videos remaining")
 
             summary = {
                 "files": results,
@@ -118,14 +217,15 @@ class ThumbnailCreatorTask(BaseTask):
                 "failed": failed,
                 "files_count": len(results),
                 "interval_ms": interval_ms,
+                "queue_remaining": len(queue),
             }
-            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, files={len(results)}")
+            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, queue_remaining={len(queue)}")
             return summary
         except Exception as e:
             import traceback
             self._print(f"Error: {str(e)}")
             self._print(f"Traceback: {traceback.format_exc()}")
-            return {"error": str(e), "files": []}
+            return {"error": str(e), "files": [], "queue_remaining": 0}
 
     def text_output(self, data: Dict[str, Any]) -> str:
         if 'error' in data and not data.get('files'):
@@ -135,7 +235,8 @@ class ThumbnailCreatorTask(BaseTask):
         failed = int(data.get('failed', 0))
         total = processed + skipped + failed
         interval_ms = int(data.get('interval_ms', 0))
-        return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}, interval: {interval_ms}ms"
+        queue_remaining = int(data.get('queue_remaining', 0))
+        return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}, interval: {interval_ms}ms, queue: {queue_remaining} remaining"
 
     def html_output(self, data: Dict[str, Any]) -> str:
         files = data.get('files', [])
@@ -201,6 +302,7 @@ class ThumbnailCreatorTask(BaseTask):
             'skipped': str(data.get('skipped', 0)),
             'failed': str(data.get('failed', 0)),
             'interval_ms': str(data.get('interval_ms', 0)),
+            'queue_remaining': str(data.get('queue_remaining', 0)),
         })
         
         return self._render_html_from_template('template/ThumbnailCreatorList.html', {

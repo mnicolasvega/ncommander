@@ -1,7 +1,7 @@
 [
   {
-    "name": "scene_frame_extractor",
-    "order": 1
+    "name": "thumbnail_creator",
+    "order": 2
   },
   {
     "name": "system_monitor",
