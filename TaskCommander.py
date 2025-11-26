@@ -39,11 +39,13 @@ class TaskCommander:
         self.cleaner = Cleaner()
         self.last_execution = {}
         self.running_containers = {}
+        self.task_registry = {}
 
     def run(self, tasks: List[dict]) -> None:
         """Main execution loop for running tasks."""
         self._initialize()
         self._save_tasks_config(tasks)
+        self._register_tasks(tasks)
         self._cleanup_orphaned()
         count = 0
         tasks_output = {}
@@ -80,6 +82,10 @@ class TaskCommander:
             if 'container' in execution_data:
                 self.running_containers[task_name] = execution_data['container']
             self.last_execution[task_name] = time.time()
+            if self._cfg['run_containerless'] and task.revive():
+                self._enqueue_task(task_name)
+                if self._cfg['print_cycles']:
+                    self._print(f"Task '{task_name}' will be revived in next cycle")
             return task_name, execution_data
         return None
 
@@ -205,10 +211,22 @@ class TaskCommander:
                 if self._cfg['print_docker_container_lifecycle']:
                     self._print(f"[docker] Container finished: {container.short_id} ({task_name}), exit code: {exit_code}")
                 self._finish_container(task_name, container)
+                if task_name in self.task_registry:
+                    task = self.task_registry[task_name]
+                    if task.revive():
+                        self._enqueue_task(task_name)
+                        if self._cfg['print_docker_container_lifecycle']:
+                            self._print(f"[docker] Task '{task_name}' will be revived in next cycle")
             except Exception as e:
                 self._print(f"[docker] Error checking container {container.short_id}: {e}")
                 self._finish_container(task_name, container)
         return containers_output
+
+    # Reset last_execution to allow immediate re-run in next cycle
+    def _enqueue_task(self, task_name: str) -> None:
+        """ Reset last_execution to allow immediate re-run in next cycle """
+        if task_name in self.last_execution:
+            del self.last_execution[task_name]
 
     def _get_finished_containers(self) -> Dict[str, Container]:
         completed_containers = {}
@@ -241,6 +259,12 @@ class TaskCommander:
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
         self._print(f">> commander v{self.VERSION}")
+
+    def _register_tasks(self, tasks: List[dict]) -> None:
+        """Register tasks for easy lookup."""
+        for task_dict in tasks:
+            task = task_dict['task']
+            self.task_registry[task.name()] = task
 
     def _save_tasks_config(self, tasks: List[dict]) -> None:
         """Save tasks configuration to a JSON file for UI server."""

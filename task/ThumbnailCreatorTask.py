@@ -22,6 +22,9 @@ class ThumbnailCreatorTask(BaseTask):
     def interval(self) -> int | None:
         return 60 * 60
 
+    def revive(self) -> bool:
+        return True
+
     def _get_queue_file_path(self, carry: Dict[str, Any]) -> str:
         """Get the path to the queue.txt file."""
         dir_root = str(carry.get("outdir", "/app/tmp"))

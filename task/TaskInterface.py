@@ -92,3 +92,10 @@ class TaskInterface(ABC):
         Return the maximum time in seconds expected for the task to complete.
         """
         pass
+
+    @abstractmethod
+    def revive(self) -> bool:
+        """
+        Return true if the task should be automatically restarted after completion.
+        """
+        pass

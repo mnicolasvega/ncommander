@@ -34,6 +34,9 @@ class BaseTask(TaskInterface):
     def max_time_expected(self) -> float | None:
         return None
 
+    def revive(self) -> bool:
+        return False
+
     def text_output(self, data: Dict[str, Any]) -> str:
         return json.dumps(data)
 
