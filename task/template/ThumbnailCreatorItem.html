@@ -1,3 +1,4 @@
+<script src="/task/template/ThumbnailCreatorItem.js"></script>
 <div class="task-item" style="margin-bottom: 32px; padding: 16px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.05);">
   <div style="margin-bottom: 12px;"><strong>{{index}}.</strong> {{video_name}}</div>
   
@@ -18,9 +19,12 @@
   
   <div style="color:#b00; margin-bottom: 12px;">{{error}}</div>
   
-  <div style="margin-top: 12px; width: 100%; max-height: 660px; overflow-y: auto; overflow-x: hidden; border: 1px solid #333; border-radius: 4px;">
-    <table style="width: 100%; border-collapse: collapse;">
-      {{thumbnails_box}}
-    </table>
+  <div style="position: relative; margin-top: 12px;">
+    <button onclick="toggleThumbnails(this)" style="position: absolute; top: 0; right: 0; z-index: 10; background-color: #444; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 16px; font-weight: bold;">+</button>
+    <div class="thumbnails-container" style="display: none; width: 100%; max-height: 660px; overflow-y: auto; overflow-x: hidden; border: 1px solid #333; border-radius: 4px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        {{thumbnails_box}}
+      </table>
+    </div>
   </div>
 </div>
