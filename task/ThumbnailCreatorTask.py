@@ -1,9 +1,9 @@
-import html
-import json
-import os
-import subprocess
+from service.QueueService import QueueService
 from task.BaseTask import BaseTask
 from typing import Any, Dict, List
+import html
+import os
+import subprocess
 
 VIDEO_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".webm",
@@ -25,48 +25,11 @@ class ThumbnailCreatorTask(BaseTask):
     def revive(self) -> bool:
         return True
 
-    def _get_queue_file_path(self, carry: Dict[str, Any]) -> str:
-        """Get the path to the queue.txt file."""
-        dir_root = str(carry.get("outdir", "/app/tmp"))
-        commander_dir = os.path.dirname(dir_root)
-        queue_dir = os.path.join(commander_dir, "var", self.name())
-        os.makedirs(queue_dir, exist_ok=True)
-        return os.path.join(queue_dir, "queue.txt")
-
-    def _read_queue(self, queue_file: str) -> List[str]:
-        """Read the queue from queue.txt. Returns empty list if file doesn't exist."""
-        if not os.path.exists(queue_file):
-            return []
-        try:
-            with open(queue_file, 'r') as f:
-                content = f.read().strip()
-                if not content:
-                    return []
-                # The last line contains the current queue as a JSON array
-                lines = content.split('\n')
-                if lines:
-                    return json.loads(lines[-1])
-                return []
-        except Exception as e:
-            self._print(f"Error reading queue: {str(e)}")
-            return []
-
-    def _write_queue(self, queue_file: str, queue: List[str]) -> None:
-        """Write the queue to queue.txt as a JSON array on a new line."""
-        try:
-            with open(queue_file, 'a') as f:
-                f.write(json.dumps(queue) + '\n')
-        except Exception as e:
-            self._print(f"Error writing queue: {str(e)}")
-
     def run(self, carry: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            queue_file = self._get_queue_file_path(carry)
-            
-            # Read existing queue or initialize from video_paths
-            queue = self._read_queue(queue_file)
-            
-            # If queue is empty, initialize from video_paths parameter
+            dir_root = str(carry.get("outdir", "/app/tmp"))
+            queue_file = QueueService.get_queue_file_path(self.name(), dir_root)
+            queue = QueueService.read_queue(queue_file)
             if not queue:
                 video_paths_raw = carry.get("video_paths", [])
                 if not isinstance(video_paths_raw, list) or len(video_paths_raw) == 0:
@@ -90,7 +53,7 @@ class ThumbnailCreatorTask(BaseTask):
                 
                 queue = files
                 # Write initial queue
-                self._write_queue(queue_file, queue)
+                QueueService.initialize_queue(queue_file, queue)
                 self._print(f"Initialized queue with {len(queue)} videos")
             
             interval_ms = int(carry.get("interval_ms", self.INTERVAL_MS))
@@ -209,8 +172,7 @@ class ThumbnailCreatorTask(BaseTask):
                 })
             
             # Remove processed video from queue
-            queue = queue[1:]
-            self._write_queue(queue_file, queue)
+            queue, _ = QueueService.pop_first(queue_file)
             self._print(f"Updated queue: {len(queue)} videos remaining")
 
             summary = {
@@ -282,9 +244,14 @@ class ThumbnailCreatorTask(BaseTask):
                             'thumbnail_name': html.escape(frame_file),
                             'timestamp': html.escape(timestamp),
                         }))
-                    
                     if thumbnail_parts:
-                        thumbnails_html = '\n'.join(thumbnail_parts)
+                        rows = []
+                        for i in range(0, len(thumbnail_parts), 5):
+                            row_thumbnails = thumbnail_parts[i:i+5]
+                            while len(row_thumbnails) < 5:
+                                row_thumbnails.append('<td></td>')
+                            rows.append(f'<tr>{" ".join(row_thumbnails)}</tr>')
+                        thumbnails_html = '\n'.join(rows)
                 except Exception as e:
                     thumbnails_html = html.escape(f"Error listing frames: {str(e)}")
             
