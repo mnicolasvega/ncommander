@@ -29,38 +29,38 @@ class ThumbnailCreatorTask(BaseTask):
         try:
             dir_root = str(carry.get("outdir", "/app/tmp"))
             queue_file = QueueService.get_queue_file_path(self.name(), dir_root)
-            queue = QueueService.read_queue(queue_file)
-            if not queue:
-                video_paths_raw = carry.get("video_paths", [])
-                if not isinstance(video_paths_raw, list) or len(video_paths_raw) == 0:
-                    return {"error": "video_paths is required and must be a non-empty list", "files": [], "queue_remaining": 0}
-                
-                in_container = bool(carry.get("in_container", False))
-                recursive = bool(carry.get("recursive", True))
-                inputs = [str(p).strip() for p in video_paths_raw if str(p).strip()]
-                
-                # Collect all video files and expand directories
-                files, expand_skips = self._collect_video_files(inputs, recursive, in_container, carry)
-                self._print(f"collection: video_files={len(files)}, skips={len(expand_skips)}")
-                
-                if not files:
-                    return {
-                        "error": "no valid video files found",
-                        "files": expand_skips,
-                        "skipped": len(expand_skips),
-                        "queue_remaining": 0
-                    }
-                
-                queue = files
-                # Write initial queue
-                QueueService.initialize_queue(queue_file, queue)
-                self._print(f"Initialized queue with {len(queue)} videos")
+            in_container = bool(carry.get("in_container", False))
+            
+            # Validate input parameters
+            video_paths_raw = carry.get("video_paths", [])
+            if not isinstance(video_paths_raw, list) or len(video_paths_raw) == 0:
+                return {"error": "video_paths is required and must be a non-empty list", "files": [], "queue_remaining": 0}
+            
+            # Build queue using QueueService
+            queue, collection_info = QueueService.build_queue(
+                queue_file=queue_file,
+                collect_func=lambda: self._collect_video_files(
+                    [str(p).strip() for p in video_paths_raw if str(p).strip()],
+                    bool(carry.get("recursive", True)),
+                    in_container,
+                    carry
+                ),
+                filter_func=lambda path: self._should_process_video(path, dir_root, in_container, carry),
+                print_func=self._print
+            )
+            
+            if not queue and collection_info["collected"] == 0:
+                return {
+                    "error": "no valid video files found",
+                    "files": collection_info["skip_details"],
+                    "skipped": collection_info["skips"],
+                    "queue_remaining": 0
+                }
             
             interval_ms = int(carry.get("interval_ms", self.INTERVAL_MS))
             if interval_ms <= 0:
                 return {"error": "interval_ms must be a positive integer", "files": [], "queue_remaining": len(queue)}
 
-            in_container = bool(carry.get("in_container", False))
             self._print(f"params: in_container={in_container}, interval_ms={interval_ms}")
             self._print(f"Queue status: {len(queue)} videos remaining")
             
@@ -327,6 +327,20 @@ class ThumbnailCreatorTask(BaseTask):
         except Exception as e:
             self._print(f"Error extracting frames: {str(e)}")
             return 0
+
+    def _should_process_video(self, host_video_path: str, dir_root: str, in_container: bool, carry: Dict[str, Any]) -> bool:
+        """Check if a video file should be processed (doesn't already have frames)."""
+        mapped_video_path = self._map_host_to_container_file(host_video_path, carry) if in_container else host_video_path
+        frames_dir_container = self._derive_output_frames_dir(dir_root, mapped_video_path)
+        
+        if os.path.exists(frames_dir_container):
+            try:
+                existing_frames = [f for f in os.listdir(frames_dir_container) if f.endswith('.jpg')]
+                if len(existing_frames) > 0:
+                    return False  # Skip, already processed
+            except Exception:
+                pass  # Keep in queue if we can't check
+        return True  # Process this video
 
     def _derive_output_frames_dir(self, outdir: str, video_path: str) -> str:
         base_name = os.path.basename(video_path)

@@ -108,3 +108,62 @@ class QueueService:
             Number of items in the queue
         """
         return len(QueueService.read_queue(queue_file))
+    
+    @staticmethod
+    def merge_and_filter_queue(queue_file: str, new_items: List[str], filter_func=None) -> List[str]:
+        """
+        Merge existing queue with new items, giving priority to existing queue items.
+        Optionally filter out items that should be skipped.
+        """
+        existing_queue = QueueService.read_queue(queue_file)
+        existing_set = set(existing_queue)
+        merged = list(existing_queue)
+        for item in new_items:
+            if item not in existing_set:
+                merged.append(item)
+                existing_set.add(item)
+        if filter_func:
+            merged = [item for item in merged if filter_func(item)]
+        QueueService.write_queue(queue_file, merged)
+        return merged
+    
+    @staticmethod
+    def build_queue(
+        queue_file: str,
+        collect_func,
+        filter_func=None,
+        print_func=None
+    ) -> tuple[List[str], dict]:
+        """
+        Complete queue building workflow: collect items, merge with existing queue, and filter.
+        
+        Args:
+            queue_file: Path to the queue file
+            collect_func: Function that returns tuple of (collected_items: List[str], skips: List[dict])
+            filter_func: Optional function that takes an item and returns True if it should be kept
+            print_func: Optional function for logging messages
+        
+        Returns:
+            Tuple of (final_queue: List[str], collection_info: dict with 'files' and 'skips')
+        """
+        # Collect items using provided function
+        collected_items, skips = collect_func()
+        
+        if print_func:
+            print_func(f"collection: items={len(collected_items)}, skips={len(skips)}")
+        
+        if not collected_items:
+            return ([], {"collected": 0, "skips": len(skips), "skip_details": skips})
+        
+        # Merge existing queue with new items and filter
+        final_queue = QueueService.merge_and_filter_queue(queue_file, collected_items, filter_func)
+        
+        if print_func:
+            print_func(f"Queue merged and filtered: {len(final_queue)} items remaining")
+        
+        return (final_queue, {
+            "collected": len(collected_items),
+            "skips": len(skips),
+            "skip_details": skips,
+            "final_queue_size": len(final_queue)
+        })
