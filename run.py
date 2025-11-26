@@ -10,6 +10,7 @@ from task.SceneChangeDetectorTask import SceneChangeDetectorTask
 from task.SceneFrameExtractorTask import SceneFrameExtractorTask
 from task.SystemMonitor import SystemMonitor
 from task.TaskData import TaskData
+from task.ThumbnailCreatorTask import ThumbnailCreatorTask
 from task.UiFlask import UiFlask
 from task.WhisperSubtitleTask import WhisperSubtitleTask
 from task.YouTubeDownloader import YouTubeDownloader
@@ -50,6 +51,17 @@ def main() -> None:
                 'recursive': True,
             },
             'order': 1
+        },
+        {
+            'task': ThumbnailCreatorTask(),
+            'parameters': {
+                'video_paths': [
+                    PATH_DIR_SCENES
+                ],
+                'interval_ms': 5000,
+                'recursive': True,
+            },
+            'order': 2
         },
         {
             'task': UiFlask(),

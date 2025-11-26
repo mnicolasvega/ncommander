@@ -140,36 +140,43 @@ class ThumbnailCreatorTask(BaseTask):
     def html_output(self, data: Dict[str, Any]) -> str:
         files = data.get('files', [])
         items_html_parts: List[str] = []
+        interval_ms = int(data.get('interval_ms', 5000))
         
         for idx, item in enumerate(files, start=1):
             path = html.escape(str(item.get('path', '')))
-            status = html.escape(str(item.get('status', 'unknown')))
+            status_raw = str(item.get('status', 'unknown'))
             frames_count = html.escape(str(item.get('frames', 0)))
             frames_dir = str(item.get('frames_dir', '')).strip()
             err = html.escape(str(item.get('error', '')))
-            reason = html.escape(str(item.get('reason', '')))
+            reason_raw = str(item.get('reason', ''))
             
-            # Get video name
+            status_formatted = f"{status_raw}, {reason_raw}" \
+                if reason_raw else \
+                status_raw
+            status = html.escape(status_formatted)
+            reason = ''
             video_name = os.path.basename(path) if path else 'Unknown'
-            
-            # Build thumbnails HTML
             thumbnails_html = ''
-            
-            # Show thumbnails for both success and skipped (when frames already exist)
-            should_show_thumbnails = (status == 'success' or (status == 'skipped' and 'frames already exist' in reason)) and frames_dir and os.path.exists(frames_dir)
+            should_show_thumbnails = (status_raw == 'success' or (status_raw == 'skipped' and 'frames already exist' in reason_raw)) and frames_dir and os.path.exists(frames_dir)
             
             if should_show_thumbnails:
-                # List thumbnail files
                 try:
                     frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
                     thumbnail_parts = []
-                    for frame_file in frame_files:
+                    for frame_idx, frame_file in enumerate(frame_files, start=1):
                         frame_path = os.path.join(frames_dir, frame_file)
-                        # Convert to var-relative path for Flask serving
                         relative_path = self._get_var_relative_path(frame_path)
+                        
+                        total_ms = (frame_idx - 1) * interval_ms
+                        hours = total_ms // (60 * 60 * 1000)
+                        minutes = (total_ms % (60 * 60 * 1000)) // (60 * 1000)
+                        seconds = (total_ms % (60 * 1000)) // 1000
+                        timestamp = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                        
                         thumbnail_parts.append(self._render_html_from_template('template/ThumbnailCreatorThumbnail.html', {
                             'thumbnail_path': html.escape(relative_path),
                             'thumbnail_name': html.escape(frame_file),
+                            'timestamp': html.escape(timestamp),
                         }))
                     
                     if thumbnail_parts:
