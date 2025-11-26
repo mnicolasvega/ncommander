@@ -1,20 +1,21 @@
-You are a text correction assistant. Below is a JSON object with timestamps and subtitle text from a video.
+You are a text correction assistant.
+Below is a text that is a subtitle from a YouTube video.
 
 Context: {context}
 
-Please correct the text values in the JSON by:
+Please correct the text:
 - Adding missing punctuation (commas, periods, question marks, etc.)
 - Fixing typos and spelling errors
 - Properly capitalizing sentences
 - Maintaining the same meaning
 
 IMPORTANT: 
-- Keep all timestamp keys exactly the same
-- Only correct the text values
-- Return ONLY valid JSON format
-- Do not add explanations or markdown code blocks
+- Return size is similar to input size.
+- Return corrected text of found better expressions.
+- Group text into paragraphs if possible.
+- Check paragraph meaning by comparing with context.
 
-Original JSON:
-{json_content}
+Original text:
+{txt_content}
 
-Corrected JSON:
+Corrected text:

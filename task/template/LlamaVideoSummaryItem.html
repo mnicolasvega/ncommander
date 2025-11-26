@@ -10,8 +10,8 @@
                 <td>{status}</td>
             </tr>
             <tr>
-                <td class="task-result-label">✨ Corrected JSON:</td>
-                <td><code>{parsed_json_path}</code></td>
+                <td class="task-result-label">✨ Corrected TXT:</td>
+                <td><code>{parsed_txt_path}</code></td>
             </tr>
             <tr>
                 <td class="task-result-label">⚠️ Error:</td>
@@ -22,15 +22,5 @@
             </tr>
         </tbody>
     </table>
-    <table class="task-result-table subtitle-table">
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Text</th>
-            </tr>
-        </thead>
-        <tbody>
-            {parsed_json_content}
-        </tbody>
-    </table>
+    <pre class="task-result-text-content">{parsed_txt_content}</pre>
 </div>
