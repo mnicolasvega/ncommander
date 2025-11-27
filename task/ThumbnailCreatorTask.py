@@ -1,9 +1,10 @@
-import html
-import os
-import subprocess
+from PIL import Image
 from service.QueueService import QueueService
 from task.BaseTask import BaseTask
 from typing import Any, Dict, List
+import html
+import os
+import subprocess
 
 VIDEO_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".webm",
@@ -175,14 +176,29 @@ class ThumbnailCreatorTask(BaseTask):
             queue, _ = QueueService.pop_first(queue_file)
             self._print(f"Updated queue: {len(queue)} videos remaining")
 
-            # Calculate progress percentage for template
-            completed = processed + skipped + failed
-            total = completed + len(queue)
-            progress_percentage = int((completed / total) * 100) if total > 0 else 0
+            # Calculate progress percentages for template
+            completed_count = processed + skipped
+            failed_count = failed
+            pending_count = len(queue)
+            total = completed_count + failed_count + pending_count
+            
+            if total > 0:
+                completed_percentage = int((completed_count / total) * 100)
+                failed_percentage = int((failed_count / total) * 100)
+                pending_percentage = 100 - completed_percentage - failed_percentage  # Ensure they sum to 100
+            else:
+                completed_percentage = 0
+                failed_percentage = 0
+                pending_percentage = 0
 
             # Render progress bar HTML
             progress_bar_html = self._render_html_from_template('template/ThumbnailCreatorProgressBar.html', {
-                'progress_percentage': str(progress_percentage)
+                'completed_percentage': str(completed_percentage),
+                'failed_percentage': str(failed_percentage),
+                'pending_percentage': str(pending_percentage),
+                'completed': str(completed_count),
+                'failed': str(failed_count),
+                'pending': str(pending_count),
             })
 
             summary = {
@@ -193,10 +209,10 @@ class ThumbnailCreatorTask(BaseTask):
                 "files_count": len(results),
                 "interval_ms": interval_ms,
                 "queue_remaining": len(queue),
-                "progress_percentage": progress_percentage,
+                "progress_percentage": completed_percentage,
                 "progress_bar": progress_bar_html,
             }
-            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, queue_remaining={len(queue)}, progress={progress_percentage}%")
+            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, queue_remaining={len(queue)}, progress={completed_percentage}%")
             return summary
         except Exception as e:
             import traceback
@@ -211,9 +227,8 @@ class ThumbnailCreatorTask(BaseTask):
         skipped = int(data.get('skipped', 0))
         failed = int(data.get('failed', 0))
         total = processed + skipped + failed
-        interval_ms = int(data.get('interval_ms', 0))
         queue_remaining = int(data.get('queue_remaining', 0))
-        return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}, interval: {interval_ms}ms, queue: {queue_remaining} remaining"
+        return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}, queue: {queue_remaining} remaining"
 
     def html_template(self) -> str:
         return 'template/QueueTaskTemplate.html'
@@ -242,7 +257,11 @@ class ThumbnailCreatorTask(BaseTask):
                         for frame_idx, frame_file in enumerate(frame_files, start=1):
                             frame_path = os.path.join(frames_dir, frame_file)
                             relative_path = self._get_var_relative_path(frame_path)
-                            
+                            thumbnail_path = self._create_thumbnail(frame_path, max_width=120)
+                            if thumbnail_path.startswith("/tmp/"):
+                                thumbnail_serve_path = thumbnail_path[1:]  # Remove leading / to avoid double slash
+                            else:
+                                thumbnail_serve_path = relative_path
                             total_ms = (frame_idx - 1) * interval_ms
                             hours = total_ms // (60 * 60 * 1000)
                             minutes = (total_ms % (60 * 60 * 1000)) // (60 * 1000)
@@ -250,7 +269,9 @@ class ThumbnailCreatorTask(BaseTask):
                             timestamp = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
                             
                             thumbnail_parts.append(self._render_html_from_template('template/ThumbnailCreatorThumbnail.html', {
-                                'thumbnail_path': html.escape(relative_path),
+                                'thumbnail_path': html.escape(thumbnail_serve_path),
+                                'original_path': html.escape(relative_path),
+                                'source_name': html.escape(frame_file),
                                 'thumbnail_name': html.escape(frame_file),
                                 'timestamp': html.escape(timestamp),
                             }))
@@ -282,25 +303,49 @@ class ThumbnailCreatorTask(BaseTask):
             except Exception as e:
                 items_html_parts.append(f'<div style="color:#f00; padding:16px;">Error scanning var directory: {html.escape(str(e))}</div>')
         
-        summary_html = self._render_html_from_template('template/ThumbnailCreatorSummary.html', {
-            'processed': str(data.get('processed', 0)),
-            'skipped': str(data.get('skipped', 0)),
-            'failed': str(data.get('failed', 0)),
-            'interval_ms': str(data.get('interval_ms', 0)),
-            'queue_remaining': str(data.get('queue_remaining', 0)),
-        })
-        
+        # Progress bar is already in the data and will be rendered in the QueueTaskTemplate second row
         return self._render_html_from_template('template/ThumbnailCreatorList.html', {
-            'summary': summary_html,
             'items': '\n'.join(items_html_parts),
         })
 
     def dependencies(self) -> Dict[str, Any]:
         return {
+            "apt": [
+                "libjpeg-dev",
+                "zlib1g-dev",
+            ],
+            "pip": [
+                "Pillow",
+            ],
             "other": [
                 "ffmpeg",
             ],
         }
+
+    def _create_thumbnail(self, source_path: str, max_width: int = 120) -> str:
+        try:
+            base_name = os.path.basename(source_path)
+            name_without_ext = os.path.splitext(base_name)[0]
+            thumbnail_name = f"{name_without_ext}_thumb.jpg"
+            thumbnail_path = os.path.join("/tmp", thumbnail_name)
+            
+            if os.path.exists(thumbnail_path):
+                return thumbnail_path
+            with Image.open(source_path) as img:
+                width, height = img.size
+                if width > max_width:
+                    ratio = max_width / width
+                    new_width = max_width
+                    new_height = int(height * ratio)
+                else:
+                    new_width = width
+                    new_height = height
+                img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                img_resized.save(thumbnail_path, "JPEG", quality=85)
+            return thumbnail_path
+        except Exception as e:
+            self._print(f"Error creating thumbnail for {source_path}: {str(e)}")
+            return source_path
 
     def _extract_frames_ffmpeg(self, video_path: str, output_dir: str, interval_ms: int) -> int:
         """

@@ -1,4 +1,8 @@
 <div class="queue-progress-container">
-  <div class="queue-progress-fill" style="width: {{progress_percentage}}%;"></div>
-  <span class="queue-progress-text">{{progress_percentage}}%</span>
+  <div style="display: flex; width: 100%; height: 100%;">
+    <div style="background: linear-gradient(90deg, #4caf50 0%, #45a049 100%); width: {{completed_percentage}}%; transition: width 0.3s ease;"></div>
+    <div style="background: linear-gradient(90deg, #f44336 0%, #d32f2f 100%); width: {{failed_percentage}}%; transition: width 0.3s ease;"></div>
+    <div style="background: linear-gradient(90deg, #1e3a5f 0%, #152a47 100%); width: {{pending_percentage}}%; transition: width 0.3s ease;"></div>
+  </div>
+  <span class="queue-progress-text">{{completed}} / {{failed}} / {{pending}}</span>
 </div>

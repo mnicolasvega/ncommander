@@ -56,7 +56,8 @@ class BaseTask(TaskInterface):
             with open(template_path, 'r', encoding='utf-8') as f:
                 html = f.read()
             for key, value in replacements.items():
-                html = html.replace(f"{{{{%s}}}}" % (key), value)
+                placeholder = "{{" + key + "}}"
+                html = html.replace(placeholder, str(value))
             return html.strip()
         except Exception as e:
             return f"error formatting: {e}"

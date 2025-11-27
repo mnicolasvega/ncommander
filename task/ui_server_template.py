@@ -49,5 +49,10 @@ def serve_var_files(filename):
     """Serve files from var directory (thumbnails, frames, etc.)."""
     return send_from_directory(VAR_DIR, filename)
 
+@app.route('/tmp/<path:filename>')
+def serve_tmp_files(filename):
+    """Serve files from tmp directory (thumbnail images, etc.)."""
+    return send_from_directory('/tmp', filename)
+
 if __name__ == '__main__':
     app.run(host=HOST, port=PORT, debug=False)
