@@ -102,7 +102,7 @@ class TaskCommander:
         launcher = TaskLauncher(task)
         launcher.run(params)
         task_name = task.name()
-        output_txt = self.output_parser.get_text(task_name, "output text.txt")
+        output_txt = self.output_parser.get_text(task_name)
         output_data = self.output_parser.get_json(task_name)
         output_html = self.output_parser.get_html(task_name)
         task_output = {
@@ -197,7 +197,7 @@ class TaskCommander:
                     .decode(errors="replace") \
                     .strip()
                 exit_code = container.attrs['State']['ExitCode']
-                output_txt = self.output_parser.get_text(task_name, "output text.txt")
+                output_txt = self.output_parser.get_text(task_name)
                 output_data = self.output_parser.get_json(task_name)
                 output_html = self.output_parser.get_html(task_name)
                 containers_output[task_name] = {

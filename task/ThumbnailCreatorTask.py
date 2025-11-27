@@ -180,6 +180,11 @@ class ThumbnailCreatorTask(BaseTask):
             total = completed + len(queue)
             progress_percentage = int((completed / total) * 100) if total > 0 else 0
 
+            # Render progress bar HTML
+            progress_bar_html = self._render_html_from_template('template/ThumbnailCreatorProgressBar.html', {
+                'progress_percentage': str(progress_percentage)
+            })
+
             summary = {
                 "files": results,
                 "processed": processed,
@@ -189,6 +194,7 @@ class ThumbnailCreatorTask(BaseTask):
                 "interval_ms": interval_ms,
                 "queue_remaining": len(queue),
                 "progress_percentage": progress_percentage,
+                "progress_bar": progress_bar_html,
             }
             self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, queue_remaining={len(queue)}, progress={progress_percentage}%")
             return summary
