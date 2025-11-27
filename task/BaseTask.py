@@ -43,6 +43,9 @@ class BaseTask(TaskInterface):
     def html_output(self, data: Dict[str, Any]) -> str:
         return json.dumps(data)
 
+    def html_template(self) -> str:
+        return 'template/BaseTaskTemplate.html'
+
     def logs(self) -> Dict[str, str]:
         return self._logs
 

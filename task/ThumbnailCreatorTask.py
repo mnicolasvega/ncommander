@@ -1,9 +1,9 @@
-from service.QueueService import QueueService
-from task.BaseTask import BaseTask
-from typing import Any, Dict, List
 import html
 import os
 import subprocess
+from service.QueueService import QueueService
+from task.BaseTask import BaseTask
+from typing import Any, Dict, List
 
 VIDEO_EXTENSIONS = {
     ".mp4", ".mkv", ".mov", ".avi", ".webm",
@@ -175,6 +175,11 @@ class ThumbnailCreatorTask(BaseTask):
             queue, _ = QueueService.pop_first(queue_file)
             self._print(f"Updated queue: {len(queue)} videos remaining")
 
+            # Calculate progress percentage for template
+            completed = processed + skipped + failed
+            total = completed + len(queue)
+            progress_percentage = int((completed / total) * 100) if total > 0 else 0
+
             summary = {
                 "files": results,
                 "processed": processed,
@@ -183,8 +188,9 @@ class ThumbnailCreatorTask(BaseTask):
                 "files_count": len(results),
                 "interval_ms": interval_ms,
                 "queue_remaining": len(queue),
+                "progress_percentage": progress_percentage,
             }
-            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, queue_remaining={len(queue)}")
+            self._print(f"summary: processed={processed}, skipped={skipped}, failed={failed}, queue_remaining={len(queue)}, progress={progress_percentage}%")
             return summary
         except Exception as e:
             import traceback
@@ -202,6 +208,9 @@ class ThumbnailCreatorTask(BaseTask):
         interval_ms = int(data.get('interval_ms', 0))
         queue_remaining = int(data.get('queue_remaining', 0))
         return f"videos: {total}, processed: {processed}, skipped: {skipped}, failed: {failed}, interval: {interval_ms}ms, queue: {queue_remaining} remaining"
+
+    def html_template(self) -> str:
+        return 'template/QueueTaskTemplate.html'
 
     def html_output(self, data: Dict[str, Any]) -> str:
         items_html_parts: List[str] = []

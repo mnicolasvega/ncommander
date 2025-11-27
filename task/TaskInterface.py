@@ -38,6 +38,13 @@ class TaskInterface(ABC):
         pass
 
     @abstractmethod
+    def html_template(self) -> str:
+        """
+        Return the name of the HTML template file to use for wrapping task output.
+        """
+        pass
+
+    @abstractmethod
     def logs(self) -> Dict[str, str]:
         """
         Return task logs in <timestamp, message> format.

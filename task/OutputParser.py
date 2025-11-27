@@ -9,13 +9,14 @@ class OutputParser:
         output_path = self.__get_path("output.html")
         builder = Builder()
         task_names = [task_dict['task'].name() for task_dict in tasks]
+        task_objects = {task_dict['task'].name(): task_dict['task'] for task_dict in tasks}
         tasks_execution_data = {}
         tasks_execution_data.update(self._load_previous_task_executions(task_names, tasks_output))
         tasks_execution_data.update(self._load_task_executions(tasks_output))
         for task_data in tasks:
             task_name = task_data['task'].name()
             if task_name in tasks_execution_data:
-                builder.add(task_name, tasks_execution_data[task_name])
+                builder.add(task_name, tasks_execution_data[task_name], task_objects.get(task_name))
         html = builder.build()
         builder.save(output_path, html)
 

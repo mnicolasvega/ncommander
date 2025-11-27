@@ -1,0 +1,36 @@
+/* This file is referenced by QueueTaskTemplate.html but most CSS is defined in template.html */
+
+.row-progress td {
+  background-color: #252525;
+  padding: 8px 14px;
+}
+
+.queue-progress-container {
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.queue-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: linear-gradient(90deg, #4a9eff 0%, #2e7bd8 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.queue-progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}

@@ -23,10 +23,12 @@ class TaskLauncher:
             output = self._task.run(params)
             text_output = self._task.text_output(output)
             html_output = self._task.html_output(output)
+            html_template = self._task.html_template()
             time_now = time.perf_counter()
             self._time_elapsed_ms = (time_now - time_start) * 1000.0
             output['time_elapsed_ms'] = self._time_elapsed_ms
             output['time_finish_ms'] = time.time() * 1000.0
+            output['html_template'] = html_template
             if (self._task.max_time_expected() is not None) and (self._time_elapsed_ms > self._task.max_time_expected()):
                 self._log(f"task took too long: {self._time_elapsed_ms} secs.")
             self._write_container_logs(output_path, output)

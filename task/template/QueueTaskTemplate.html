@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../task/template/QueueTaskTemplate.css">
+<table class="item-table">
+  <tr class="row-header">
+    <td class="left">{{task_name}}</td>
+    <td class="right">{{finished_time}} - {{execution_time}}</td>
+  </tr>
+  <tr class="row-progress">
+    <td colspan="2">
+      <div class="queue-progress-container">
+        <div class="queue-progress-fill" style="width: {{progress_percentage}}%;"></div>
+        <span class="queue-progress-text">{{progress_percentage}}%</span>
+      </div>
+    </td>
+  </tr>
+  <tr class="row-content">
+    <td colspan="2">{{output}}</td>
+  </tr>
+</table>
