@@ -3,7 +3,7 @@ import os
 import time
 
 FILE_NAME_TEMPLATE = '../task/template/template.html'
-FILE_NAME_TASK_TEMPLATE = '../task/template/task_template.html'
+FILE_NAME_TASK_TEMPLATE = '../task/template/BaseTaskTemplate.html'
 
 class Builder:
     def __init__(self):
